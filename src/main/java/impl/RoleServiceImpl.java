@@ -1,4 +1,4 @@
-package impl;
+package com.kangoute.appointment.impl;
 
 import com.kangoute.appointment.entity.Role;
 import com.kangoute.appointment.enums.RoleName;
