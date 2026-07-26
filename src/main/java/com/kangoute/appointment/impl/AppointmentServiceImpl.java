@@ -76,6 +76,13 @@ public class AppointmentServiceImpl implements AppointmentService {
     }
 
     @Override
+    public Appointment updateStatus(Long id, AppointmentStatus status) {
+        Appointment existingAppointment = getAppointmentById(id);
+        existingAppointment.setStatus(status);
+        return appointmentRepository.save(existingAppointment);
+    }
+
+    @Override
     public Appointment getAppointmentById(Long id) {
         return appointmentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Appointment not found with id: " + id));

@@ -289,6 +289,26 @@ Effet concret :
 - `DELETE /api/admin/users/{id}` supprime un utilisateur
 - l'acces est reserve au role `ADMIN`
 
+### 15. Gestion administrative des rendez-vous
+
+J'ai ajoute une couche d'administration pour les rendez-vous.
+
+Pourquoi :
+- le role `ADMIN` doit pouvoir superviser les rendez-vous globalement
+- il faut un canal d'administration qui ne depasse pas le parcours utilisateur
+- les rendez-vous doivent pouvoir etre suivis et corriges sans ouvrir toute l'API
+
+Ce qui a ete ajoute :
+- `AdminAppointmentController`
+- `AppointmentStatusUpdateRequest`
+- `AppointmentService.updateStatus`
+
+Effet concret :
+- `GET /api/admin/appointments` liste tous les rendez-vous
+- `GET /api/admin/appointments/{id}` recupere un rendez-vous
+- `PATCH /api/admin/appointments/{id}/status` modifie le statut
+- l'acces est reserve au role `ADMIN`
+
 ## Etat actuel
 
 Le projet compile et les tests passent.
