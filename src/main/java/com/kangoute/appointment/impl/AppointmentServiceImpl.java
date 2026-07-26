@@ -2,6 +2,8 @@ package com.kangoute.appointment.impl;
 
 import com.kangoute.appointment.entity.Appointment;
 import com.kangoute.appointment.enums.AppointmentStatus;
+import com.kangoute.appointment.exception.AppointmentConflictException;
+import com.kangoute.appointment.exception.InvalidAppointmentTimeException;
 import com.kangoute.appointment.exception.ResourceNotFoundException;
 import com.kangoute.appointment.repository.AppointmentRepository;
 import com.kangoute.appointment.service.AppointmentService;
@@ -18,6 +20,21 @@ public class AppointmentServiceImpl implements AppointmentService {
 
     @Override
     public Appointment createAppointment(Appointment appointment) {
+        if (appointment.getStartDateTime().isAfter(appointment.getEndDateTime())
+                || appointment.getStartDateTime().isEqual(appointment.getEndDateTime())) {
+            throw new InvalidAppointmentTimeException("Appointment start date must be before end date");
+        }
+
+        boolean conflict = appointmentRepository.existsByUserIdAndStartDateTimeLessThanAndEndDateTimeGreaterThan(
+                appointment.getUser().getId(),
+                appointment.getEndDateTime(),
+                appointment.getStartDateTime()
+        );
+
+        if (conflict) {
+            throw new AppointmentConflictException("User already has an appointment during this time slot");
+        }
+
         if (appointment.getStatus() == null) {
             appointment.setStatus(AppointmentStatus.PENDING);
         }
