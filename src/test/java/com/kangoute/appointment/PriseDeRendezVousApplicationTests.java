@@ -1,4 +1,4 @@
-package com.rendez_vous.priseDeRendezVous;
+package com.kangoute.appointment;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;

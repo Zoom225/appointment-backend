@@ -1,4 +1,4 @@
-package com.rendez_vous.priseDeRendezVous;
+package com.kangoute.appointment;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
