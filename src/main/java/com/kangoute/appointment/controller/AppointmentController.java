@@ -1,6 +1,7 @@
 package com.kangoute.appointment.controller;
 
 import com.kangoute.appointment.dto.request.AppointmentCreateRequest;
+import com.kangoute.appointment.dto.request.AppointmentUpdateRequest;
 import com.kangoute.appointment.dto.response.AppointmentResponse;
 import com.kangoute.appointment.entity.Appointment;
 import com.kangoute.appointment.entity.User;
@@ -17,6 +18,8 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -41,6 +44,20 @@ public class AppointmentController {
     @GetMapping("/{id}")
     public AppointmentResponse getAppointmentById(@PathVariable Long id) {
         return appointmentMapper.toResponse(appointmentService.getAppointmentById(id));
+    }
+
+    @PutMapping("/{id}")
+    public AppointmentResponse updateAppointment(
+            @PathVariable Long id,
+            @Valid @RequestBody AppointmentUpdateRequest request
+    ) {
+        Appointment appointment = appointmentMapper.toEntity(request);
+        return appointmentMapper.toResponse(appointmentService.updateAppointment(id, appointment));
+    }
+
+    @PatchMapping("/{id}/cancel")
+    public AppointmentResponse cancelAppointment(@PathVariable Long id) {
+        return appointmentMapper.toResponse(appointmentService.cancelAppointment(id));
     }
 
     @GetMapping

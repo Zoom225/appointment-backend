@@ -42,6 +42,40 @@ public class AppointmentServiceImpl implements AppointmentService {
     }
 
     @Override
+    public Appointment updateAppointment(Long id, Appointment appointment) {
+        Appointment existingAppointment = getAppointmentById(id);
+
+        if (appointment.getStartDateTime().isAfter(appointment.getEndDateTime())
+                || appointment.getStartDateTime().isEqual(appointment.getEndDateTime())) {
+            throw new InvalidAppointmentTimeException("Appointment start date must be before end date");
+        }
+
+        boolean conflict = appointmentRepository.existsByUserIdAndIdNotAndStartDateTimeLessThanAndEndDateTimeGreaterThan(
+                existingAppointment.getUser().getId(),
+                existingAppointment.getId(),
+                appointment.getEndDateTime(),
+                appointment.getStartDateTime()
+        );
+
+        if (conflict) {
+            throw new AppointmentConflictException("User already has an appointment during this time slot");
+        }
+
+        existingAppointment.setStartDateTime(appointment.getStartDateTime());
+        existingAppointment.setEndDateTime(appointment.getEndDateTime());
+        existingAppointment.setReason(appointment.getReason());
+
+        return appointmentRepository.save(existingAppointment);
+    }
+
+    @Override
+    public Appointment cancelAppointment(Long id) {
+        Appointment existingAppointment = getAppointmentById(id);
+        existingAppointment.setStatus(AppointmentStatus.CANCELLED);
+        return appointmentRepository.save(existingAppointment);
+    }
+
+    @Override
     public Appointment getAppointmentById(Long id) {
         return appointmentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Appointment not found with id: " + id));

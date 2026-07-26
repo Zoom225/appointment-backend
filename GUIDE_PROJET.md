@@ -206,6 +206,24 @@ Ce qui a ete corrige :
 - position des fichiers sous `src/main/java`
 - conflits Git de merge
 
+### 11. Mise a jour et annulation des rendez-vous
+
+J'ai ajoute la suite logique de `Appointment` :
+- mise a jour d'un rendez-vous
+- annulation d'un rendez-vous
+- detection des conflits en ignorant le rendez-vous en cours de modification
+
+Pourquoi :
+- une prise de rendez-vous utile ne se limite pas a la creation
+- l'utilisateur doit pouvoir corriger ou annuler un creneau
+- les regles de disponibilite doivent rester valides apres modification
+
+Effet concret :
+- `PUT /api/appointments/{id}` modifie un rendez-vous existant
+- `PATCH /api/appointments/{id}/cancel` annule un rendez-vous
+- la validation de plage horaire reste appliquee
+- les conflits de creneaux restent bloques
+
 ## Etat actuel
 
 Le projet compile et les tests passent.
