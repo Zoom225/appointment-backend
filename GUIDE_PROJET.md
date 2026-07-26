@@ -266,6 +266,29 @@ Effet concret :
 - `POST /api/auth/**` reste public pour la connexion
 - les autres operations `User` et `Appointment` demandent un role `USER` ou `ADMIN`
 
+### 14. Gestion administrative des utilisateurs
+
+J'ai ajoute une couche d'administration pour les utilisateurs.
+
+Pourquoi :
+- les roles servent maintenant a quelque chose de concret
+- l'administration doit pouvoir superviser et corriger les comptes
+- il faut pouvoir verifier, modifier ou supprimer un utilisateur sans passer par le parcours public
+
+Ce qui a ete ajoute :
+- `AdminUserController`
+- `UserAdminUpdateRequest`
+- `UserService.getAllUsers`
+- `UserService.updateUser`
+- `UserService.deleteUser`
+
+Effet concret :
+- `GET /api/admin/users` liste les utilisateurs
+- `GET /api/admin/users/{id}` recupere un utilisateur
+- `PUT /api/admin/users/{id}` modifie un utilisateur
+- `DELETE /api/admin/users/{id}` supprime un utilisateur
+- l'acces est reserve au role `ADMIN`
+
 ## Etat actuel
 
 Le projet compile et les tests passent.
