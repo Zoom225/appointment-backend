@@ -1,5 +1,3 @@
-package com.rendez_vous.priseDeRendezVous;
-
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
