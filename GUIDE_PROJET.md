@@ -224,6 +224,29 @@ Effet concret :
 - la validation de plage horaire reste appliquee
 - les conflits de creneaux restent bloques
 
+### 12. Authentification utilisateur
+
+J'ai ajoute une premiere vraie couche d'authentification.
+
+Pourquoi :
+- le projet avait deja la gestion des utilisateurs et des roles
+- il fallait un flux de connexion cohérent avant d'aller plus loin sur les droits et la protection des routes
+- une authentification basique par session est suffisante a ce stade, sans ajouter de complexite JWT prematuree
+
+Ce qui a ete ajoute :
+- `CustomUserDetails`
+- `CustomUserDetailsService`
+- `AuthController`
+- `AuthRequest`
+- `AuthResponse`
+- `AuthMapper`
+- bean `AuthenticationManager`
+
+Effet concret :
+- `POST /api/auth/login` verifie l'email et le mot de passe
+- la session Spring Security est enregistree
+- l'utilisateur connecte est renvoye dans la reponse
+
 ## Etat actuel
 
 Le projet compile et les tests passent.
