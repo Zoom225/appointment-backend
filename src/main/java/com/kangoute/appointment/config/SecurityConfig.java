@@ -1,4 +1,4 @@
-package com.rendez_vous.priseDeRendezVous.config;
+package com.kangoute.appointment.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
