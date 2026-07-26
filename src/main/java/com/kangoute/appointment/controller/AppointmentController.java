@@ -11,6 +11,7 @@ import com.kangoute.appointment.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -35,6 +36,7 @@ public class AppointmentController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public AppointmentResponse createAppointment(@Valid @RequestBody AppointmentCreateRequest request) {
         User user = userService.getUserById(request.getUserId());
         Appointment appointment = appointmentMapper.toEntity(request, user);
@@ -42,11 +44,13 @@ public class AppointmentController {
     }
 
     @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public AppointmentResponse getAppointmentById(@PathVariable Long id) {
         return appointmentMapper.toResponse(appointmentService.getAppointmentById(id));
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public AppointmentResponse updateAppointment(
             @PathVariable Long id,
             @Valid @RequestBody AppointmentUpdateRequest request
@@ -56,11 +60,13 @@ public class AppointmentController {
     }
 
     @PatchMapping("/{id}/cancel")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public AppointmentResponse cancelAppointment(@PathVariable Long id) {
         return appointmentMapper.toResponse(appointmentService.cancelAppointment(id));
     }
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public List<AppointmentResponse> getAppointments(@RequestParam(required = false) Long userId) {
         List<Appointment> appointments = (userId == null)
                 ? appointmentService.getAllAppointments()

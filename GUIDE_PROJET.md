@@ -247,6 +247,25 @@ Effet concret :
 - la session Spring Security est enregistree
 - l'utilisateur connecte est renvoye dans la reponse
 
+### 13. Autorisation par roles
+
+J'ai ajoute une premiere couche d'autorisation basee sur les roles.
+
+Pourquoi :
+- l'authentification seule ne suffit pas
+- il faut separer ce qu'un utilisateur connecte peut faire de ce qu'un administrateur peut faire
+- les routes ne doivent plus etre ouvertes sans controle apres la connexion
+
+Ce qui a ete ajoute :
+- `@EnableMethodSecurity`
+- `@PreAuthorize` sur les methodes metier
+- ouverture publique limitee a l'inscription et a la connexion
+
+Effet concret :
+- `POST /api/users/**` reste public pour l'inscription
+- `POST /api/auth/**` reste public pour la connexion
+- les autres operations `User` et `Appointment` demandent un role `USER` ou `ADMIN`
+
 ## Etat actuel
 
 Le projet compile et les tests passent.
