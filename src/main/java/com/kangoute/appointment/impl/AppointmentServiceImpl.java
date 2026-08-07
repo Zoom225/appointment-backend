@@ -6,9 +6,12 @@ import com.kangoute.appointment.exception.AppointmentConflictException;
 import com.kangoute.appointment.exception.InvalidAppointmentTimeException;
 import com.kangoute.appointment.exception.ResourceNotFoundException;
 import com.kangoute.appointment.repository.AppointmentRepository;
+import com.kangoute.appointment.repository.specification.AppointmentSpecifications;
 import com.kangoute.appointment.service.AppointmentAvailabilityService;
 import com.kangoute.appointment.service.AppointmentService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -98,6 +101,26 @@ public class AppointmentServiceImpl implements AppointmentService {
     public Appointment getAppointmentById(Long id) {
         return appointmentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Appointment not found with id: " + id));
+    }
+
+    @Override
+    public Page<Appointment> getAppointmentsByUserId(Long userId, Pageable pageable, AppointmentStatus status, java.time.LocalDateTime startFrom, java.time.LocalDateTime startTo) {
+        return appointmentRepository.findAll(
+                AppointmentSpecifications.hasUserId(userId)
+                        .and(AppointmentSpecifications.hasStatus(status))
+                        .and(AppointmentSpecifications.overlaps(startFrom, startTo)),
+                pageable
+        );
+    }
+
+    @Override
+    public Page<Appointment> getAllAppointments(Pageable pageable, Long userId, AppointmentStatus status, java.time.LocalDateTime startFrom, java.time.LocalDateTime startTo) {
+        return appointmentRepository.findAll(
+                AppointmentSpecifications.hasUserId(userId)
+                        .and(AppointmentSpecifications.hasStatus(status))
+                        .and(AppointmentSpecifications.overlaps(startFrom, startTo)),
+                pageable
+        );
     }
 
     @Override

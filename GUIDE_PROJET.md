@@ -382,6 +382,35 @@ Effet concret :
 - l'admin garde un acces global
 - les routes API gardent une regle lisible et testee
 
+### 19. Pagination et filtres sur les listes
+
+J'ai ajoute la pagination et des filtres de consultation sur les listes utilisateurs et rendez-vous.
+
+Pourquoi :
+- les endpoints de liste ne devaient pas renvoyer des volumes croissants sans limite
+- l'administration a besoin d'interroger des sous-ensembles de donnees
+- les filtres doivent rester derives de la base de donnees, pas faits en memoire
+
+Ce qui a ete ajoute :
+- `JpaSpecificationExecutor` sur `UserRepository` et `AppointmentRepository`
+- `UserSpecifications`
+- `AppointmentSpecifications`
+- `Page<UserResponse>` pour `GET /api/admin/users`
+- `Page<AppointmentResponse>` pour `GET /api/admin/appointments`
+- `Page<AppointmentResponse>` pour `GET /api/appointments`
+
+Filtres disponibles :
+- utilisateurs: `query`, `role`
+- rendez-vous: `userId`, `status`, `startFrom`, `startTo`
+
+Tests ajoutes :
+- pagination des utilisateurs
+- filtre texte sur les utilisateurs
+- filtre par role sur les utilisateurs
+- pagination des rendez-vous
+- filtre par statut sur les rendez-vous
+- filtre par chevauchement de plage sur les rendez-vous
+
 ## Etat actuel
 
 Le projet compile.

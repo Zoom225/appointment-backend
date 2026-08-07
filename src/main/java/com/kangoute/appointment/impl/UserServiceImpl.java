@@ -5,9 +5,12 @@ import com.kangoute.appointment.enums.RoleName;
 import com.kangoute.appointment.exception.DuplicateResourceException;
 import com.kangoute.appointment.exception.ResourceNotFoundException;
 import com.kangoute.appointment.repository.UserRepository;
+import com.kangoute.appointment.repository.specification.UserSpecifications;
 import com.kangoute.appointment.service.RoleService;
 import com.kangoute.appointment.service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -44,6 +47,14 @@ public class UserServiceImpl implements UserService {
     public User getUserById(Long id) {
         return userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
+    }
+
+    @Override
+    public Page<User> getAllUsers(Pageable pageable, String query, RoleName role) {
+        return userRepository.findAll(
+                UserSpecifications.matchesQuery(query).and(UserSpecifications.hasRole(role)),
+                pageable
+        );
     }
 
     @Override

@@ -1,6 +1,9 @@
 package com.kangoute.appointment.service;
 
 import com.kangoute.appointment.entity.User;
+import com.kangoute.appointment.enums.RoleName;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 public interface UserService {
 
@@ -9,6 +12,8 @@ public interface UserService {
     User getUserByEmail(String email);
 
     User getUserById(Long id);
+
+    Page<User> getAllUsers(Pageable pageable, String query, RoleName role);
 
     java.util.List<User> getAllUsers();
 

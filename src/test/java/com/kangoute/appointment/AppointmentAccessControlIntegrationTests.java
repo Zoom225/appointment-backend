@@ -13,6 +13,7 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -67,7 +68,7 @@ class AppointmentAccessControlIntegrationTests {
         Appointment otherAppointment = createAppointment(other, "Other");
         authenticateAs(owner);
 
-        assertEquals(1, appointmentController.getAppointments(null).size());
+        assertEquals(1, appointmentController.getAppointments(PageRequest.of(0, 10), null, null, null, null).getTotalElements());
         assertEquals(ownerAppointment.getId(), appointmentController.getAppointmentById(ownerAppointment.getId()).getId());
         assertThrows(AccessDeniedException.class, () -> appointmentController.getAppointmentById(otherAppointment.getId()));
         assertThrows(AccessDeniedException.class, () -> userController.getUserByEmail(other.getEmail()));
