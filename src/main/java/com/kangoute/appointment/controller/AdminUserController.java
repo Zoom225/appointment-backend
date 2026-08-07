@@ -4,11 +4,14 @@ import com.kangoute.appointment.dto.request.UserAdminUpdateRequest;
 import com.kangoute.appointment.dto.response.UserResponse;
 import com.kangoute.appointment.entity.Role;
 import com.kangoute.appointment.entity.User;
+import com.kangoute.appointment.enums.RoleName;
 import com.kangoute.appointment.mapper.UserMapper;
 import com.kangoute.appointment.service.RoleService;
 import com.kangoute.appointment.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -16,10 +19,9 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 @RestController
@@ -33,10 +35,13 @@ public class AdminUserController {
     private final RoleService roleService;
 
     @GetMapping
-    public List<UserResponse> getAllUsers() {
-        return userService.getAllUsers().stream()
-                .map(userMapper::toResponse)
-                .toList();
+    public Page<UserResponse> getAllUsers(
+            Pageable pageable,
+            @RequestParam(required = false) String query,
+            @RequestParam(required = false) RoleName role
+    ) {
+        return userService.getAllUsers(pageable, query, role)
+                .map(userMapper::toResponse);
     }
 
     @GetMapping("/{id}")

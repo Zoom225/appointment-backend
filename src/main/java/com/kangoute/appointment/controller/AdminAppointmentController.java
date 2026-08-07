@@ -2,19 +2,23 @@ package com.kangoute.appointment.controller;
 
 import com.kangoute.appointment.dto.request.AppointmentStatusUpdateRequest;
 import com.kangoute.appointment.dto.response.AppointmentResponse;
+import com.kangoute.appointment.enums.AppointmentStatus;
 import com.kangoute.appointment.mapper.AppointmentMapper;
 import com.kangoute.appointment.service.AppointmentService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
+import java.time.LocalDateTime;
 
 @RestController
 @RequestMapping("/api/admin/appointments")
@@ -26,10 +30,15 @@ public class AdminAppointmentController {
     private final AppointmentMapper appointmentMapper;
 
     @GetMapping
-    public List<AppointmentResponse> getAllAppointments() {
-        return appointmentService.getAllAppointments().stream()
-                .map(appointmentMapper::toResponse)
-                .toList();
+    public Page<AppointmentResponse> getAllAppointments(
+            Pageable pageable,
+            @RequestParam(required = false) Long userId,
+            @RequestParam(required = false) AppointmentStatus status,
+            @RequestParam(required = false) LocalDateTime startFrom,
+            @RequestParam(required = false) LocalDateTime startTo
+    ) {
+        return appointmentService.getAllAppointments(pageable, userId, status, startFrom, startTo)
+                .map(appointmentMapper::toResponse);
     }
 
     @GetMapping("/{id}")

@@ -4,10 +4,12 @@ import com.kangoute.appointment.dto.request.UserCreateRequest;
 import com.kangoute.appointment.dto.response.UserResponse;
 import com.kangoute.appointment.entity.User;
 import com.kangoute.appointment.mapper.UserMapper;
+import com.kangoute.appointment.security.CurrentUserService;
 import com.kangoute.appointment.service.UserService;
 import lombok.RequiredArgsConstructor;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -24,6 +26,7 @@ public class UserController {
 
     private final UserService userService;
     private final UserMapper userMapper;
+    private final CurrentUserService currentUserService;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -35,6 +38,9 @@ public class UserController {
     @GetMapping
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public UserResponse getUserByEmail(@RequestParam String email) {
+        if (!currentUserService.isAdmin() && !currentUserService.getCurrentUserEmail().equals(email)) {
+            throw new AccessDeniedException("You can only access your own profile");
+        }
         return userMapper.toResponse(userService.getUserByEmail(email));
     }
 }
