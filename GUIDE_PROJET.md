@@ -309,9 +309,41 @@ Effet concret :
 - `PATCH /api/admin/appointments/{id}/status` modifie le statut
 - l'acces est reserve au role `ADMIN`
 
+### 16. Disponibilite des rendez-vous
+
+J'ai ajoute une regle de disponibilite de base et une consultation des creneaux libres.
+
+Pourquoi :
+- le projet avait deja la gestion des conflits, mais pas la notion de plage horaire exploitable
+- il fallait bloquer les rendez-vous hors horaires de travail
+- il fallait donner une vue simple des creneaux disponibles pour un utilisateur donne
+
+Ce qui a ete ajoute :
+- `AppointmentAvailabilityProperties`
+- `AppointmentAvailabilityService`
+- `AppointmentAvailabilityServiceImpl`
+- `AppointmentAvailabilitySlotResponse`
+- `AppointmentOutsideAvailabilityException`
+- `GET /api/appointments/availability`
+
+Regles appliquees :
+- un rendez-vous doit commencer et finir le meme jour
+- un rendez-vous doit rester dans les horaires de travail
+- seuls les jours ouvrables definis sont autorises
+- la consultation des creneaux libres se base sur des pas de 30 minutes
+
+Tests ajoutes :
+- creation refusee hors horaires
+- creation valide dans les horaires
+- creneau occupe absent de la liste des disponibilites
+
 ## Etat actuel
 
-Le projet compile et les tests passent.
+Le projet compile.
+
+Les tests sont maintenant isoles de la base Neon via H2 en environnement de test, ce qui rend `mvn test` autonome dans le projet local.
+
+La configuration de base de donnees de production n'est plus versionnee en clair dans le repository; elle doit venir des variables d'environnement.
 
 Commandes deja valides :
 ```bash
@@ -326,6 +358,7 @@ La suite naturelle est :
 - ajouter une couche de disponibilite ou de planning si le besoin metier le demande
 - preparer l'authentification utilisateur
 - nettoyer les warnings non bloquants de dev
+- documenter les variables d'environnement attendues pour le lancement hors test
 
 ## Regle de mise a jour
 

@@ -2,16 +2,19 @@ package com.kangoute.appointment.controller;
 
 import com.kangoute.appointment.dto.request.AppointmentCreateRequest;
 import com.kangoute.appointment.dto.request.AppointmentUpdateRequest;
+import com.kangoute.appointment.dto.response.AppointmentAvailabilitySlotResponse;
 import com.kangoute.appointment.dto.response.AppointmentResponse;
 import com.kangoute.appointment.entity.Appointment;
 import com.kangoute.appointment.entity.User;
 import com.kangoute.appointment.mapper.AppointmentMapper;
+import com.kangoute.appointment.service.AppointmentAvailabilityService;
 import com.kangoute.appointment.service.AppointmentService;
 import com.kangoute.appointment.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -23,6 +26,7 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -31,6 +35,7 @@ import java.util.List;
 public class AppointmentController {
 
     private final AppointmentService appointmentService;
+    private final AppointmentAvailabilityService appointmentAvailabilityService;
     private final UserService userService;
     private final AppointmentMapper appointmentMapper;
 
@@ -75,5 +80,14 @@ public class AppointmentController {
         return appointments.stream()
                 .map(appointmentMapper::toResponse)
                 .toList();
+    }
+
+    @GetMapping("/availability")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    public List<AppointmentAvailabilitySlotResponse> getAvailability(
+            @RequestParam Long userId,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date
+    ) {
+        return appointmentAvailabilityService.getAvailableSlots(userId, date);
     }
 }
