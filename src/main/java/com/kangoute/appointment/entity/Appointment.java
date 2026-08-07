@@ -32,6 +32,8 @@ public class Appointment {
     @Column(nullable = false)
     private AppointmentStatus status;
 
+    private LocalDateTime reminderSentAt;
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "user_id", nullable = false)
     private User user;

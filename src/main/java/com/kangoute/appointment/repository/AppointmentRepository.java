@@ -29,4 +29,11 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long>,
             LocalDateTime endDateTime,
             LocalDateTime startDateTime
     );
+
+    List<Appointment> findByStatusNotAndReminderSentAtIsNullAndStartDateTimeBetween(
+            com.kangoute.appointment.enums.AppointmentStatus status,
+            LocalDateTime startDateTime,
+            LocalDateTime endDateTime
+    );
+
 }

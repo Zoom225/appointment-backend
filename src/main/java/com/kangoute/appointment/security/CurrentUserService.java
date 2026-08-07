@@ -24,6 +24,14 @@ public class CurrentUserService {
         return getCurrentUserDetails().getUsername();
     }
 
+    public String getCurrentUserEmailOrSystem() {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !(authentication.getPrincipal() instanceof CustomUserDetails userDetails)) {
+            return "SYSTEM";
+        }
+        return userDetails.getUsername();
+    }
+
     public boolean isAdmin() {
         return getCurrentUserDetails().getAuthorities().stream()
                 .anyMatch(authority -> authority.getAuthority().equals("ROLE_ADMIN"));

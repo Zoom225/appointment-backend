@@ -1,9 +1,11 @@
 package com.kangoute.appointment.controller;
 
 import com.kangoute.appointment.dto.request.AppointmentStatusUpdateRequest;
+import com.kangoute.appointment.dto.response.AppointmentAuditResponse;
 import com.kangoute.appointment.dto.response.AppointmentResponse;
 import com.kangoute.appointment.enums.AppointmentStatus;
 import com.kangoute.appointment.mapper.AppointmentMapper;
+import com.kangoute.appointment.service.AppointmentAuditService;
 import com.kangoute.appointment.service.AppointmentService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -19,6 +21,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/admin/appointments")
@@ -28,6 +31,7 @@ public class AdminAppointmentController {
 
     private final AppointmentService appointmentService;
     private final AppointmentMapper appointmentMapper;
+    private final AppointmentAuditService appointmentAuditService;
 
     @GetMapping
     public Page<AppointmentResponse> getAllAppointments(
@@ -52,5 +56,10 @@ public class AdminAppointmentController {
             @Valid @RequestBody AppointmentStatusUpdateRequest request
     ) {
         return appointmentMapper.toResponse(appointmentService.updateStatus(id, request.getStatus()));
+    }
+
+    @GetMapping("/{id}/history")
+    public List<AppointmentAuditResponse> getHistory(@PathVariable Long id) {
+        return appointmentAuditService.getHistory(id);
     }
 }
