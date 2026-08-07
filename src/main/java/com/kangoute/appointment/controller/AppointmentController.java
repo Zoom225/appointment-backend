@@ -7,6 +7,7 @@ import com.kangoute.appointment.dto.response.AppointmentResponse;
 import com.kangoute.appointment.entity.Appointment;
 import com.kangoute.appointment.entity.User;
 import com.kangoute.appointment.mapper.AppointmentMapper;
+import com.kangoute.appointment.security.CurrentUserService;
 import com.kangoute.appointment.service.AppointmentAvailabilityService;
 import com.kangoute.appointment.service.AppointmentService;
 import com.kangoute.appointment.service.UserService;
@@ -14,6 +15,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -38,11 +40,15 @@ public class AppointmentController {
     private final AppointmentAvailabilityService appointmentAvailabilityService;
     private final UserService userService;
     private final AppointmentMapper appointmentMapper;
+    private final CurrentUserService currentUserService;
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public AppointmentResponse createAppointment(@Valid @RequestBody AppointmentCreateRequest request) {
+        if (!currentUserService.isAdmin() && !currentUserService.isCurrentUser(request.getUserId())) {
+            throw new AccessDeniedException("You can only create appointments for your own user account");
+        }
         User user = userService.getUserById(request.getUserId());
         Appointment appointment = appointmentMapper.toEntity(request, user);
         return appointmentMapper.toResponse(appointmentService.createAppointment(appointment));
@@ -51,7 +57,11 @@ public class AppointmentController {
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public AppointmentResponse getAppointmentById(@PathVariable Long id) {
-        return appointmentMapper.toResponse(appointmentService.getAppointmentById(id));
+        Appointment appointment = appointmentService.getAppointmentById(id);
+        if (!currentUserService.isAdmin() && !currentUserService.isCurrentUser(appointment.getUser().getId())) {
+            throw new AccessDeniedException("You can only access your own appointments");
+        }
+        return appointmentMapper.toResponse(appointment);
     }
 
     @PutMapping("/{id}")
@@ -60,6 +70,10 @@ public class AppointmentController {
             @PathVariable Long id,
             @Valid @RequestBody AppointmentUpdateRequest request
     ) {
+        Appointment existingAppointment = appointmentService.getAppointmentById(id);
+        if (!currentUserService.isAdmin() && !currentUserService.isCurrentUser(existingAppointment.getUser().getId())) {
+            throw new AccessDeniedException("You can only update your own appointments");
+        }
         Appointment appointment = appointmentMapper.toEntity(request);
         return appointmentMapper.toResponse(appointmentService.updateAppointment(id, appointment));
     }
@@ -67,15 +81,28 @@ public class AppointmentController {
     @PatchMapping("/{id}/cancel")
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public AppointmentResponse cancelAppointment(@PathVariable Long id) {
+        Appointment existingAppointment = appointmentService.getAppointmentById(id);
+        if (!currentUserService.isAdmin() && !currentUserService.isCurrentUser(existingAppointment.getUser().getId())) {
+            throw new AccessDeniedException("You can only cancel your own appointments");
+        }
         return appointmentMapper.toResponse(appointmentService.cancelAppointment(id));
     }
 
     @GetMapping
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public List<AppointmentResponse> getAppointments(@RequestParam(required = false) Long userId) {
-        List<Appointment> appointments = (userId == null)
+        Long targetUserId = userId;
+        if (!currentUserService.isAdmin()) {
+            Long currentUserId = currentUserService.getCurrentUserId();
+            if (targetUserId != null && !targetUserId.equals(currentUserId)) {
+                throw new AccessDeniedException("You can only access your own appointments");
+            }
+            targetUserId = currentUserId;
+        }
+
+        List<Appointment> appointments = (targetUserId == null)
                 ? appointmentService.getAllAppointments()
-                : appointmentService.getAppointmentsByUserId(userId);
+                : appointmentService.getAppointmentsByUserId(targetUserId);
 
         return appointments.stream()
                 .map(appointmentMapper::toResponse)
@@ -88,6 +115,9 @@ public class AppointmentController {
             @RequestParam Long userId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date
     ) {
+        if (!currentUserService.isAdmin() && !currentUserService.isCurrentUser(userId)) {
+            throw new AccessDeniedException("You can only access your own availability");
+        }
         return appointmentAvailabilityService.getAvailableSlots(userId, date);
     }
 }

@@ -337,6 +337,51 @@ Tests ajoutes :
 - creation valide dans les horaires
 - creneau occupe absent de la liste des disponibilites
 
+### 17. Variables d'environnement de lancement
+
+J'ai ajoute un fichier d'exemple pour expliciter la configuration attendue au demarrage.
+
+Pourquoi :
+- la configuration de production ne doit pas rester en clair dans le repository
+- le lancement local doit rester lisible sans deviner les variables attendues
+- Docker et Spring Boot ont besoin des memes informations de connexion
+
+Ce qui a ete ajoute :
+- `.env.example`
+
+Variables attendues :
+- `PORT`
+- `SPRING_DATASOURCE_URL`
+- `SPRING_DATASOURCE_USERNAME`
+- `SPRING_DATASOURCE_PASSWORD`
+
+### 18. Audit final de cohérence et de securite
+
+J'ai resserre les controles d'acces sur les ressources metier.
+
+Pourquoi :
+- les routes de lecture et de modification ne devaient pas laisser un utilisateur agir sur les donnees d'un autre
+- la securite ne doit pas reposer uniquement sur `@PreAuthorize`, mais aussi sur le proprietaire de la ressource
+- le backend doit rester coherent entre authentification, autorisation et modele metier
+
+Ce qui a ete ajoute :
+- `CurrentUserService`
+- verifications de proprietaire sur `UserController`
+- verifications de proprietaire sur `AppointmentController`
+- suppression de `formLogin` pour garder une API purement orientee session manuelle / endpoint de login
+- handler 403 pour les violations d'acces
+
+Tests ajoutes :
+- creation de rendez-vous refusee pour un autre utilisateur
+- consultation refusee d'un profil tiers
+- consultation refusee d'un rendez-vous tiers
+- mise a jour et annulation refusees sur un rendez-vous tiers
+
+Effet concret :
+- un utilisateur simple ne manipule plus que ses propres ressources
+- l'admin garde un acces global
+- les routes API gardent une regle lisible et testee
+
 ## Etat actuel
 
 Le projet compile.
@@ -358,7 +403,7 @@ La suite naturelle est :
 - ajouter une couche de disponibilite ou de planning si le besoin metier le demande
 - preparer l'authentification utilisateur
 - nettoyer les warnings non bloquants de dev
-- documenter les variables d'environnement attendues pour le lancement hors test
+- pousser un audit final de securite et de coherence des endpoints
 
 ## Regle de mise a jour
 
