@@ -43,6 +43,12 @@ public class GlobalExceptionHandler {
                 .body(Map.of("message", ex.getMessage()));
     }
 
+    @ExceptionHandler(InvalidStatisticsPeriodException.class)
+    public ResponseEntity<Map<String, String>> handleInvalidStatisticsPeriod(InvalidStatisticsPeriodException ex) {
+        return ResponseEntity.badRequest()
+                .body(Map.of("message", ex.getMessage()));
+    }
+
     @ExceptionHandler(AccessDeniedException.class)
     public ResponseEntity<Map<String, String>> handleAccessDenied(AccessDeniedException ex) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN)

@@ -1,6 +1,6 @@
 # Guide du projet
 
-Derniere mise a jour : 26/07/2026
+Derniere mise a jour : 07/08/2026
 
 ## Objectif
 
@@ -461,6 +461,7 @@ Ce qui a ete ajoute :
 - `NotificationController`
 - `AdminNotificationController`
 - `AppointmentReminderScheduler`
+- `AppointmentNotificationSpecifications`
 
 Notifications generees :
 - creation
@@ -469,6 +470,13 @@ Notifications generees :
 - changement de statut
 - rappel avant rendez-vous
 
+Lecture des notifications :
+- pagination sur les endpoints utilisateur et admin
+- filtre par type
+- filtre par notifications non lues
+- filtre par plage de creation
+- filtre admin supplementaire par destinataire
+
 Regles appliquees :
 - chaque notification appartient a l'utilisateur concerne
 - un rappel n'est genere qu'une fois par rendez-vous
@@ -476,6 +484,38 @@ Regles appliquees :
 
 Tests ajoutes :
 - notifications de cycle de vie sur les rendez-vous
+- pagination et filtres sur les notifications
+
+### 22. Statistiques d'administration
+
+J'ai ajoute un endpoint admin de synthese pour suivre l'activite du backend.
+
+Pourquoi :
+- l'admin a besoin d'indicateurs rapides sur l'etat du systeme
+- les volumes et statuts de rendez-vous doivent rester visibles sans requetes manuelles
+- le backend gagne une vue de pilotage simple avant la partie frontend
+
+Ce qui a ete ajoute :
+- `AdminStatisticsController`
+- `AdminStatisticsService`
+- `AdminStatisticsServiceImpl`
+- `AdminStatisticsResponse`
+- `InvalidStatisticsPeriodException`
+
+Indicateurs exposes :
+- nombre total d'utilisateurs
+- nombre d'utilisateurs actifs sur les 30 derniers jours
+- nombre total de rendez-vous
+- volume de rendez-vous sur une periode
+- repartition des rendez-vous par statut
+
+Regles appliquees :
+- la periode de statistiques est validée avant calcul
+- l'activite utilisateur est mesuree par les rendez-vous recents
+
+Tests ajoutes :
+- statistiques globales admin
+- rejet d'une periode invalide
 - marquage en lecture d'une notification
 - generation d'un rappel unique pour un rendez-vous imminent
 

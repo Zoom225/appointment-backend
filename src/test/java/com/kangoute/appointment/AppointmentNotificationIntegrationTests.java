@@ -17,6 +17,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.annotation.Transactional;
@@ -65,9 +67,15 @@ class AppointmentNotificationIntegrationTests {
                 .reason("Initial")
                 .build());
 
-        List<AppointmentNotificationResponse> createdNotifications = notificationController.getMyNotifications();
-        assertEquals(1, createdNotifications.size());
-        assertEquals(AppointmentNotificationType.CREATED, createdNotifications.get(0).getType());
+        Page<AppointmentNotificationResponse> createdNotifications = notificationController.getMyNotifications(
+                PageRequest.of(0, 10),
+                null,
+                null,
+                null,
+                null
+        );
+        assertEquals(1, createdNotifications.getTotalElements());
+        assertEquals(AppointmentNotificationType.CREATED, createdNotifications.getContent().get(0).getType());
 
         AppointmentUpdateRequest updateRequest = new AppointmentUpdateRequest();
         updateRequest.setReason("Updated");
@@ -82,14 +90,20 @@ class AppointmentNotificationIntegrationTests {
         authenticateAs(owner);
         appointmentService.cancelAppointment(appointment.getId());
 
-        List<AppointmentNotificationResponse> notifications = notificationController.getMyNotifications();
-        assertEquals(4, notifications.size());
-        assertEquals(AppointmentNotificationType.CANCELLED, notifications.get(0).getType());
-        assertEquals(AppointmentNotificationType.STATUS_CHANGED, notifications.get(1).getType());
-        assertEquals(AppointmentNotificationType.UPDATED, notifications.get(2).getType());
-        assertEquals(AppointmentNotificationType.CREATED, notifications.get(3).getType());
+        Page<AppointmentNotificationResponse> notifications = notificationController.getMyNotifications(
+                PageRequest.of(0, 10),
+                null,
+                null,
+                null,
+                null
+        );
+        assertEquals(4, notifications.getTotalElements());
+        assertEquals(AppointmentNotificationType.CANCELLED, notifications.getContent().get(0).getType());
+        assertEquals(AppointmentNotificationType.STATUS_CHANGED, notifications.getContent().get(1).getType());
+        assertEquals(AppointmentNotificationType.UPDATED, notifications.getContent().get(2).getType());
+        assertEquals(AppointmentNotificationType.CREATED, notifications.getContent().get(3).getType());
 
-        AppointmentNotificationResponse read = notificationController.markAsRead(notifications.get(0).getId());
+        AppointmentNotificationResponse read = notificationController.markAsRead(notifications.getContent().get(0).getId());
         assertNotNull(read.getReadAt());
     }
 

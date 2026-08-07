@@ -9,9 +9,14 @@ import com.kangoute.appointment.exception.ResourceNotFoundException;
 import com.kangoute.appointment.mapper.AppointmentNotificationMapper;
 import com.kangoute.appointment.repository.AppointmentNotificationRepository;
 import com.kangoute.appointment.repository.AppointmentRepository;
+import com.kangoute.appointment.repository.specification.AppointmentNotificationSpecifications;
 import com.kangoute.appointment.service.AppointmentNotificationService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -72,6 +77,32 @@ public class AppointmentNotificationServiceImpl implements AppointmentNotificati
     }
 
     @Override
+    public Page<AppointmentNotificationResponse> getMyNotifications(Long recipientId, Pageable pageable, AppointmentNotificationType type, Boolean unreadOnly, LocalDateTime createdFrom, LocalDateTime createdTo) {
+        return appointmentNotificationRepository.findAll(
+                        AppointmentNotificationSpecifications.hasRecipientId(recipientId)
+                                .and(AppointmentNotificationSpecifications.hasType(type))
+                                .and(AppointmentNotificationSpecifications.isUnread(unreadOnly))
+                                .and(AppointmentNotificationSpecifications.createdFrom(createdFrom))
+                                .and(AppointmentNotificationSpecifications.createdTo(createdTo)),
+                        normalizePageable(pageable)
+                )
+                .map(appointmentNotificationMapper::toResponse);
+    }
+
+    @Override
+    public Page<AppointmentNotificationResponse> getAllNotifications(Pageable pageable, Long recipientId, AppointmentNotificationType type, Boolean unreadOnly, LocalDateTime createdFrom, LocalDateTime createdTo) {
+        return appointmentNotificationRepository.findAll(
+                        AppointmentNotificationSpecifications.hasRecipientId(recipientId)
+                                .and(AppointmentNotificationSpecifications.hasType(type))
+                                .and(AppointmentNotificationSpecifications.isUnread(unreadOnly))
+                                .and(AppointmentNotificationSpecifications.createdFrom(createdFrom))
+                                .and(AppointmentNotificationSpecifications.createdTo(createdTo)),
+                        normalizePageable(pageable)
+                )
+                .map(appointmentNotificationMapper::toResponse);
+    }
+
+    @Override
     public List<AppointmentNotificationResponse> getMyNotifications(Long recipientId) {
         return appointmentNotificationRepository.findByRecipientIdOrderByCreatedAtDesc(recipientId)
                 .stream()
@@ -122,5 +153,21 @@ public class AppointmentNotificationServiceImpl implements AppointmentNotificati
             case STATUS_CHANGED -> "Appointment status changed by " + actorEmail;
             case REMINDER -> "Reminder for appointment starting at " + appointment.getStartDateTime();
         };
+    }
+
+    private Pageable normalizePageable(Pageable pageable) {
+        if (pageable == null) {
+            return PageRequest.of(0, 20, Sort.by(Sort.Direction.DESC, "createdAt"));
+        }
+
+        if (pageable.getSort().isUnsorted()) {
+            return PageRequest.of(
+                    pageable.getPageNumber(),
+                    pageable.getPageSize(),
+                    Sort.by(Sort.Direction.DESC, "createdAt")
+            );
+        }
+
+        return pageable;
     }
 }
