@@ -37,7 +37,7 @@ public class AppointmentServiceImpl implements AppointmentService {
     public Appointment createAppointment(Appointment appointment) {
         if (appointment.getStartDateTime().isAfter(appointment.getEndDateTime())
                 || appointment.getStartDateTime().isEqual(appointment.getEndDateTime())) {
-            throw new InvalidAppointmentTimeException("Appointment start date must be before end date");
+            throw new InvalidAppointmentTimeException("L'heure de debut du rendez-vous doit etre avant l'heure de fin");
         }
 
         appointmentAvailabilityService.validateAppointmentWindow(
@@ -52,7 +52,7 @@ public class AppointmentServiceImpl implements AppointmentService {
         );
 
         if (conflict) {
-            throw new AppointmentConflictException("User already has an appointment during this time slot");
+            throw new AppointmentConflictException("L'utilisateur a deja un rendez-vous sur ce creneau");
         }
 
         if (appointment.getStatus() == null) {
@@ -74,7 +74,7 @@ public class AppointmentServiceImpl implements AppointmentService {
 
         if (appointment.getStartDateTime().isAfter(appointment.getEndDateTime())
                 || appointment.getStartDateTime().isEqual(appointment.getEndDateTime())) {
-            throw new InvalidAppointmentTimeException("Appointment start date must be before end date");
+            throw new InvalidAppointmentTimeException("L'heure de debut du rendez-vous doit etre avant l'heure de fin");
         }
 
         appointmentAvailabilityService.validateAppointmentWindow(
@@ -90,7 +90,7 @@ public class AppointmentServiceImpl implements AppointmentService {
         );
 
         if (conflict) {
-            throw new AppointmentConflictException("User already has an appointment during this time slot");
+            throw new AppointmentConflictException("L'utilisateur a deja un rendez-vous sur ce creneau");
         }
 
         String before = buildAppointmentSummary(existingAppointment);
@@ -118,7 +118,7 @@ public class AppointmentServiceImpl implements AppointmentService {
         existingAppointment.setStatus(AppointmentStatus.CANCELLED);
         existingAppointment.setReminderSentAt(null);
         Appointment saved = appointmentRepository.save(existingAppointment);
-        appointmentAuditService.record(saved, AppointmentAuditAction.CANCELLED, "Status changed to CANCELLED");
+        appointmentAuditService.record(saved, AppointmentAuditAction.CANCELLED, "Statut change en ANNULE");
         appointmentNotificationService.notifyAppointmentEvent(
                 saved,
                 AppointmentNotificationType.CANCELLED,
@@ -131,13 +131,13 @@ public class AppointmentServiceImpl implements AppointmentService {
     public Appointment updateStatus(Long id, AppointmentStatus status) {
         Appointment existingAppointment = getAppointmentById(id);
         if (status == null) {
-            throw new InvalidAppointmentTimeException("Appointment status must not be null");
+            throw new InvalidAppointmentTimeException("Le statut du rendez-vous ne doit pas etre nul");
         }
         AppointmentStatus before = existingAppointment.getStatus();
         existingAppointment.setStatus(status);
         existingAppointment.setReminderSentAt(null);
         Appointment saved = appointmentRepository.save(existingAppointment);
-        appointmentAuditService.record(saved, AppointmentAuditAction.STATUS_CHANGED, "Status changed from " + before + " to " + status);
+        appointmentAuditService.record(saved, AppointmentAuditAction.STATUS_CHANGED, "Statut change de " + before + " a " + status);
         appointmentNotificationService.notifyAppointmentEvent(
                 saved,
                 AppointmentNotificationType.STATUS_CHANGED,
@@ -150,7 +150,7 @@ public class AppointmentServiceImpl implements AppointmentService {
     @Transactional(readOnly = true)
     public Appointment getAppointmentById(Long id) {
         return appointmentRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Appointment not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Rendez-vous introuvable avec l'identifiant : " + id));
     }
 
     @Override
@@ -188,11 +188,11 @@ public class AppointmentServiceImpl implements AppointmentService {
     }
 
     private String buildCreatedDetails(Appointment appointment) {
-        return "Created " + buildAppointmentSummary(appointment);
+        return "Cree " + buildAppointmentSummary(appointment);
     }
 
     private String buildAppointmentSummary(Appointment appointment) {
-        return "appointment["
+        return "rendezvous["
                 + "start=" + appointment.getStartDateTime()
                 + ", end=" + appointment.getEndDateTime()
                 + ", reason=" + appointment.getReason()
