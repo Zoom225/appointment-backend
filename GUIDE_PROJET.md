@@ -1,6 +1,6 @@
 # Guide du projet
 
-Derniere mise a jour : 26/07/2026
+Derniere mise a jour : 07/08/2026
 
 ## Objectif
 
@@ -410,6 +410,114 @@ Tests ajoutes :
 - pagination des rendez-vous
 - filtre par statut sur les rendez-vous
 - filtre par chevauchement de plage sur les rendez-vous
+
+### 20. Historique et audit des rendez-vous
+
+J'ai ajoute un historique metier des actions sur les rendez-vous.
+
+Pourquoi :
+- il fallait garder une trace lisible des changements importants
+- l'administration doit pouvoir relire l'enchainement des actions
+- les changements de rendez-vous doivent rester auditables sans parcourir les logs techniques
+
+Ce qui a ete ajoute :
+- `AppointmentAudit`
+- `AppointmentAuditAction`
+- `AppointmentAuditRepository`
+- `AppointmentAuditService`
+- `AppointmentAuditServiceImpl`
+- `AppointmentAuditMapper`
+- `AppointmentAuditResponse`
+- `GET /api/admin/appointments/{id}/history`
+
+Actions journalisees :
+- creation
+- mise a jour
+- annulation
+- changement de statut
+
+Tests ajoutes :
+- audit enregistre sur les actions de rendez-vous
+- lecture de l'historique par l'admin
+- fallback `SYSTEM` quand aucune authentification n'est presente
+
+### 21. Notifications et rappels
+
+J'ai ajoute une couche de notifications persistées pour les actions sur rendez-vous et un rappel planifie.
+
+Pourquoi :
+- les changements importants de rendez-vous doivent remonter au lieu d'etre seulement audites
+- un utilisateur doit pouvoir consulter ses notifications depuis l'API
+- le backend doit pouvoir generer un rappel sans intervention manuelle
+
+Ce qui a ete ajoute :
+- `AppointmentNotification`
+- `AppointmentNotificationType`
+- `AppointmentNotificationRepository`
+- `AppointmentNotificationService`
+- `AppointmentNotificationServiceImpl`
+- `AppointmentNotificationMapper`
+- `AppointmentNotificationResponse`
+- `NotificationController`
+- `AdminNotificationController`
+- `AppointmentReminderScheduler`
+- `AppointmentNotificationSpecifications`
+
+Notifications generees :
+- creation
+- mise a jour
+- annulation
+- changement de statut
+- rappel avant rendez-vous
+
+Lecture des notifications :
+- pagination sur les endpoints utilisateur et admin
+- filtre par type
+- filtre par notifications non lues
+- filtre par plage de creation
+- filtre admin supplementaire par destinataire
+
+Regles appliquees :
+- chaque notification appartient a l'utilisateur concerne
+- un rappel n'est genere qu'une fois par rendez-vous
+- le scheduler de rappel est desactive en tests pour garder le build deterministe
+
+Tests ajoutes :
+- notifications de cycle de vie sur les rendez-vous
+- pagination et filtres sur les notifications
+
+### 22. Statistiques d'administration
+
+J'ai ajoute un endpoint admin de synthese pour suivre l'activite du backend.
+
+Pourquoi :
+- l'admin a besoin d'indicateurs rapides sur l'etat du systeme
+- les volumes et statuts de rendez-vous doivent rester visibles sans requetes manuelles
+- le backend gagne une vue de pilotage simple avant la partie frontend
+
+Ce qui a ete ajoute :
+- `AdminStatisticsController`
+- `AdminStatisticsService`
+- `AdminStatisticsServiceImpl`
+- `AdminStatisticsResponse`
+- `InvalidStatisticsPeriodException`
+
+Indicateurs exposes :
+- nombre total d'utilisateurs
+- nombre d'utilisateurs actifs sur les 30 derniers jours
+- nombre total de rendez-vous
+- volume de rendez-vous sur une periode
+- repartition des rendez-vous par statut
+
+Regles appliquees :
+- la periode de statistiques est validée avant calcul
+- l'activite utilisateur est mesuree par les rendez-vous recents
+
+Tests ajoutes :
+- statistiques globales admin
+- rejet d'une periode invalide
+- marquage en lecture d'une notification
+- generation d'un rappel unique pour un rendez-vous imminent
 
 ## Etat actuel
 

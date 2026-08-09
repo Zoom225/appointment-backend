@@ -1,4 +1,4 @@
-package com.kangoute.appointment.impl;
+package com.kangoute.appointment.service.impl;
 
 import com.kangoute.appointment.config.AppointmentAvailabilityProperties;
 import com.kangoute.appointment.dto.response.AppointmentAvailabilitySlotResponse;
@@ -9,6 +9,7 @@ import com.kangoute.appointment.service.AppointmentAvailabilityService;
 import com.kangoute.appointment.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.DayOfWeek;
 import java.time.Duration;
@@ -20,6 +21,7 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class AppointmentAvailabilityServiceImpl implements AppointmentAvailabilityService {
 
     private final AppointmentRepository appointmentRepository;
@@ -28,6 +30,10 @@ public class AppointmentAvailabilityServiceImpl implements AppointmentAvailabili
 
     @Override
     public void validateAppointmentWindow(LocalDateTime startDateTime, LocalDateTime endDateTime) {
+        if (properties.getSlotMinutes() <= 0) {
+            throw new AppointmentOutsideAvailabilityException("Appointment slot duration must be greater than zero");
+        }
+
         if (!startDateTime.toLocalDate().equals(endDateTime.toLocalDate())) {
             throw new AppointmentOutsideAvailabilityException("Appointment must start and end on the same day");
         }

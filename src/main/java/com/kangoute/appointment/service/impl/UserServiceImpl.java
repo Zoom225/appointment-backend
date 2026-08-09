@@ -1,4 +1,4 @@
-package com.kangoute.appointment.impl;
+package com.kangoute.appointment.service.impl;
 
 import com.kangoute.appointment.entity.User;
 import com.kangoute.appointment.enums.RoleName;
@@ -13,12 +13,14 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collections;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
@@ -38,18 +40,21 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public User getUserByEmail(String email) {
         return userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + email));
     }
 
     @Override
+    @Transactional(readOnly = true)
     public User getUserById(Long id) {
         return userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Page<User> getAllUsers(Pageable pageable, String query, RoleName role) {
         return userRepository.findAll(
                 UserSpecifications.matchesQuery(query).and(UserSpecifications.hasRole(role)),
@@ -58,6 +63,7 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<User> getAllUsers() {
         return userRepository.findAll();
     }
