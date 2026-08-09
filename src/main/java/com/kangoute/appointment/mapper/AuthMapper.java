@@ -10,7 +10,7 @@ import java.util.stream.Collectors;
 @Component
 public class AuthMapper {
 
-    public AuthResponse toResponse(User user, String message) {
+    public AuthResponse toResponse(User user, String token, String message) {
         AuthResponse response = new AuthResponse();
         response.setId(user.getId());
         response.setFirstName(user.getFirstName());
@@ -19,6 +19,7 @@ public class AuthMapper {
         response.setRoles(user.getRoles().stream()
                 .map(role -> role.getName())
                 .collect(Collectors.toSet()));
+        response.setToken(token);
         response.setMessage(message);
         return response;
     }

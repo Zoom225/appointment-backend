@@ -11,6 +11,7 @@ public class AuthResponse {
     private String lastName;
     private String email;
     private Set<RoleName> roles;
+    private String token;
     private String message;
 
     public Long getId() {
@@ -51,6 +52,14 @@ public class AuthResponse {
 
     public void setRoles(Set<RoleName> roles) {
         this.roles = roles;
+    }
+
+    public String getToken() {
+        return token;
+    }
+
+    public void setToken(String token) {
+        this.token = token;
     }
 
     public String getMessage() {

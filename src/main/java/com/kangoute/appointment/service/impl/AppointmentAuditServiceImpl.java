@@ -1,4 +1,4 @@
-package com.kangoute.appointment.impl;
+package com.kangoute.appointment.service.impl;
 
 import com.kangoute.appointment.dto.response.AppointmentAuditResponse;
 import com.kangoute.appointment.entity.Appointment;
@@ -10,12 +10,14 @@ import com.kangoute.appointment.service.AppointmentAuditService;
 import com.kangoute.appointment.security.CurrentUserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class AppointmentAuditServiceImpl implements AppointmentAuditService {
 
     private final AppointmentAuditRepository appointmentAuditRepository;
@@ -35,6 +37,7 @@ public class AppointmentAuditServiceImpl implements AppointmentAuditService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<AppointmentAuditResponse> getHistory(Long appointmentId) {
         return appointmentAuditRepository.findByAppointmentIdOrderByOccurredAtDesc(appointmentId)
                 .stream()

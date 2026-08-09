@@ -1,4 +1,4 @@
-package com.kangoute.appointment.impl;
+package com.kangoute.appointment.service.impl;
 
 import com.kangoute.appointment.service.AppointmentNotificationService;
 import lombok.RequiredArgsConstructor;

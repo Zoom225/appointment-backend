@@ -5,6 +5,7 @@ import com.kangoute.appointment.enums.AppointmentNotificationType;
 import com.kangoute.appointment.mapper.AppointmentNotificationMapper;
 import com.kangoute.appointment.security.CurrentUserService;
 import com.kangoute.appointment.service.AppointmentNotificationService;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -23,6 +24,7 @@ import java.util.List;
 @RequestMapping("/api/notifications")
 @RequiredArgsConstructor
 @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+@SecurityRequirement(name = "bearerAuth")
 public class NotificationController {
 
     private final AppointmentNotificationService appointmentNotificationService;

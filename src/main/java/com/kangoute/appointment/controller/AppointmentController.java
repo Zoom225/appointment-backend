@@ -12,6 +12,7 @@ import com.kangoute.appointment.security.CurrentUserService;
 import com.kangoute.appointment.service.AppointmentAvailabilityService;
 import com.kangoute.appointment.service.AppointmentService;
 import com.kangoute.appointment.service.UserService;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -37,6 +38,7 @@ import java.time.LocalDateTime;
 @RestController
 @RequestMapping("/api/appointments")
 @RequiredArgsConstructor
+@SecurityRequirement(name = "bearerAuth")
 public class AppointmentController {
 
     private final AppointmentService appointmentService;

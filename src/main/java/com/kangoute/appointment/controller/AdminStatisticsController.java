@@ -2,6 +2,7 @@ package com.kangoute.appointment.controller;
 
 import com.kangoute.appointment.dto.response.AdminStatisticsResponse;
 import com.kangoute.appointment.service.AdminStatisticsService;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -16,6 +17,7 @@ import java.time.LocalDateTime;
 @RequestMapping("/api/admin/statistics")
 @RequiredArgsConstructor
 @PreAuthorize("hasRole('ADMIN')")
+@SecurityRequirement(name = "bearerAuth")
 public class AdminStatisticsController {
 
     private final AdminStatisticsService adminStatisticsService;

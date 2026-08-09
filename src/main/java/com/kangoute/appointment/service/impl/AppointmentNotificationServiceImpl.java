@@ -1,4 +1,4 @@
-package com.kangoute.appointment.impl;
+package com.kangoute.appointment.service.impl;
 
 import com.kangoute.appointment.dto.response.AppointmentNotificationResponse;
 import com.kangoute.appointment.entity.Appointment;
@@ -18,12 +18,14 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class AppointmentNotificationServiceImpl implements AppointmentNotificationService {
 
     private final AppointmentNotificationRepository appointmentNotificationRepository;
@@ -77,9 +79,10 @@ public class AppointmentNotificationServiceImpl implements AppointmentNotificati
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Page<AppointmentNotificationResponse> getMyNotifications(Long recipientId, Pageable pageable, AppointmentNotificationType type, Boolean unreadOnly, LocalDateTime createdFrom, LocalDateTime createdTo) {
         return appointmentNotificationRepository.findAll(
-                        AppointmentNotificationSpecifications.hasRecipientId(recipientId)
+                AppointmentNotificationSpecifications.hasRecipientId(recipientId)
                                 .and(AppointmentNotificationSpecifications.hasType(type))
                                 .and(AppointmentNotificationSpecifications.isUnread(unreadOnly))
                                 .and(AppointmentNotificationSpecifications.createdFrom(createdFrom))
@@ -90,9 +93,10 @@ public class AppointmentNotificationServiceImpl implements AppointmentNotificati
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Page<AppointmentNotificationResponse> getAllNotifications(Pageable pageable, Long recipientId, AppointmentNotificationType type, Boolean unreadOnly, LocalDateTime createdFrom, LocalDateTime createdTo) {
         return appointmentNotificationRepository.findAll(
-                        AppointmentNotificationSpecifications.hasRecipientId(recipientId)
+                AppointmentNotificationSpecifications.hasRecipientId(recipientId)
                                 .and(AppointmentNotificationSpecifications.hasType(type))
                                 .and(AppointmentNotificationSpecifications.isUnread(unreadOnly))
                                 .and(AppointmentNotificationSpecifications.createdFrom(createdFrom))
@@ -103,6 +107,7 @@ public class AppointmentNotificationServiceImpl implements AppointmentNotificati
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<AppointmentNotificationResponse> getMyNotifications(Long recipientId) {
         return appointmentNotificationRepository.findByRecipientIdOrderByCreatedAtDesc(recipientId)
                 .stream()
@@ -111,6 +116,7 @@ public class AppointmentNotificationServiceImpl implements AppointmentNotificati
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<AppointmentNotificationResponse> getAllNotifications() {
         return appointmentNotificationRepository.findAllByOrderByCreatedAtDesc()
                 .stream()

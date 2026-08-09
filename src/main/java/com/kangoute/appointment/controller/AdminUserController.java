@@ -8,6 +8,7 @@ import com.kangoute.appointment.enums.RoleName;
 import com.kangoute.appointment.mapper.UserMapper;
 import com.kangoute.appointment.service.RoleService;
 import com.kangoute.appointment.service.UserService;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -28,6 +29,7 @@ import java.util.stream.Collectors;
 @RequestMapping("/api/admin/users")
 @RequiredArgsConstructor
 @PreAuthorize("hasRole('ADMIN')")
+@SecurityRequirement(name = "bearerAuth")
 public class AdminUserController {
 
     private final UserService userService;

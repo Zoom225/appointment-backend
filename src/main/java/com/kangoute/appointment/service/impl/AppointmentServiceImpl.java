@@ -1,4 +1,4 @@
-package com.kangoute.appointment.impl;
+package com.kangoute.appointment.service.impl;
 
 import com.kangoute.appointment.entity.Appointment;
 import com.kangoute.appointment.enums.AppointmentStatus;
@@ -18,11 +18,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Transactional
 public class AppointmentServiceImpl implements AppointmentService {
 
     private final AppointmentRepository appointmentRepository;
@@ -110,6 +112,9 @@ public class AppointmentServiceImpl implements AppointmentService {
     @Override
     public Appointment cancelAppointment(Long id) {
         Appointment existingAppointment = getAppointmentById(id);
+        if (existingAppointment.getStatus() == AppointmentStatus.CANCELLED) {
+            return existingAppointment;
+        }
         existingAppointment.setStatus(AppointmentStatus.CANCELLED);
         existingAppointment.setReminderSentAt(null);
         Appointment saved = appointmentRepository.save(existingAppointment);
@@ -125,6 +130,9 @@ public class AppointmentServiceImpl implements AppointmentService {
     @Override
     public Appointment updateStatus(Long id, AppointmentStatus status) {
         Appointment existingAppointment = getAppointmentById(id);
+        if (status == null) {
+            throw new InvalidAppointmentTimeException("Appointment status must not be null");
+        }
         AppointmentStatus before = existingAppointment.getStatus();
         existingAppointment.setStatus(status);
         existingAppointment.setReminderSentAt(null);
@@ -139,12 +147,14 @@ public class AppointmentServiceImpl implements AppointmentService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Appointment getAppointmentById(Long id) {
         return appointmentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Appointment not found with id: " + id));
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Page<Appointment> getAppointmentsByUserId(Long userId, Pageable pageable, AppointmentStatus status, java.time.LocalDateTime startFrom, java.time.LocalDateTime startTo) {
         return appointmentRepository.findAll(
                 AppointmentSpecifications.hasUserId(userId)
@@ -155,6 +165,7 @@ public class AppointmentServiceImpl implements AppointmentService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public Page<Appointment> getAllAppointments(Pageable pageable, Long userId, AppointmentStatus status, java.time.LocalDateTime startFrom, java.time.LocalDateTime startTo) {
         return appointmentRepository.findAll(
                 AppointmentSpecifications.hasUserId(userId)
@@ -165,11 +176,13 @@ public class AppointmentServiceImpl implements AppointmentService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<Appointment> getAppointmentsByUserId(Long userId) {
         return appointmentRepository.findByUserId(userId);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<Appointment> getAllAppointments() {
         return appointmentRepository.findAll();
     }

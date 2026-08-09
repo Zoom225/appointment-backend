@@ -3,6 +3,7 @@ package com.kangoute.appointment.controller;
 import com.kangoute.appointment.dto.response.AppointmentNotificationResponse;
 import com.kangoute.appointment.enums.AppointmentNotificationType;
 import com.kangoute.appointment.service.AppointmentNotificationService;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -18,6 +19,7 @@ import java.time.LocalDateTime;
 @RequestMapping("/api/admin/notifications")
 @RequiredArgsConstructor
 @PreAuthorize("hasRole('ADMIN')")
+@SecurityRequirement(name = "bearerAuth")
 public class AdminNotificationController {
 
     private final AppointmentNotificationService appointmentNotificationService;

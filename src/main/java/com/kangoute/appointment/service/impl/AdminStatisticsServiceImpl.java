@@ -1,4 +1,4 @@
-package com.kangoute.appointment.impl;
+package com.kangoute.appointment.service.impl;
 
 import com.kangoute.appointment.dto.response.AdminStatisticsResponse;
 import com.kangoute.appointment.enums.AppointmentStatus;
@@ -8,11 +8,13 @@ import com.kangoute.appointment.repository.UserRepository;
 import com.kangoute.appointment.service.AdminStatisticsService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class AdminStatisticsServiceImpl implements AdminStatisticsService {
 
     private static final long ACTIVE_WINDOW_DAYS = 30;

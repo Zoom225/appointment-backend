@@ -7,6 +7,7 @@ import com.kangoute.appointment.enums.AppointmentStatus;
 import com.kangoute.appointment.mapper.AppointmentMapper;
 import com.kangoute.appointment.service.AppointmentAuditService;
 import com.kangoute.appointment.service.AppointmentService;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -27,6 +28,7 @@ import java.util.List;
 @RequestMapping("/api/admin/appointments")
 @RequiredArgsConstructor
 @PreAuthorize("hasRole('ADMIN')")
+@SecurityRequirement(name = "bearerAuth")
 public class AdminAppointmentController {
 
     private final AppointmentService appointmentService;
