@@ -11,7 +11,7 @@ public class CurrentUserService {
     public CustomUserDetails getCurrentUserDetails() {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null || !(authentication.getPrincipal() instanceof CustomUserDetails userDetails)) {
-            throw new AccessDeniedException("Access denied");
+            throw new AccessDeniedException("Acces refuse");
         }
         return userDetails;
     }

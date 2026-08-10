@@ -31,21 +31,21 @@ public class AppointmentAvailabilityServiceImpl implements AppointmentAvailabili
     @Override
     public void validateAppointmentWindow(LocalDateTime startDateTime, LocalDateTime endDateTime) {
         if (properties.getSlotMinutes() <= 0) {
-            throw new AppointmentOutsideAvailabilityException("Appointment slot duration must be greater than zero");
+            throw new AppointmentOutsideAvailabilityException("La duree du creneau doit etre superieure a zero");
         }
 
         if (!startDateTime.toLocalDate().equals(endDateTime.toLocalDate())) {
-            throw new AppointmentOutsideAvailabilityException("Appointment must start and end on the same day");
+            throw new AppointmentOutsideAvailabilityException("Le rendez-vous doit commencer et se terminer le meme jour");
         }
 
         if (!properties.getWorkingDays().contains(startDateTime.getDayOfWeek())) {
-            throw new AppointmentOutsideAvailabilityException("Appointment must be scheduled on a working day");
+            throw new AppointmentOutsideAvailabilityException("Le rendez-vous doit etre planifie un jour ouvrable");
         }
 
         LocalTime startTime = startDateTime.toLocalTime();
         LocalTime endTime = endDateTime.toLocalTime();
         if (startTime.isBefore(properties.getWorkdayStart()) || endTime.isAfter(properties.getWorkdayEnd())) {
-            throw new AppointmentOutsideAvailabilityException("Appointment must stay within working hours");
+            throw new AppointmentOutsideAvailabilityException("Le rendez-vous doit rester dans les horaires de travail");
         }
     }
 

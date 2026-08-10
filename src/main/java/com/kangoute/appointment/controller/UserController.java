@@ -40,7 +40,7 @@ public class UserController {
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public UserResponse getUserByEmail(@RequestParam String email) {
         if (!currentUserService.isAdmin() && !currentUserService.getCurrentUserEmail().equals(email)) {
-            throw new AccessDeniedException("You can only access your own profile");
+            throw new AccessDeniedException("Vous ne pouvez acceder qu'a votre propre profil");
         }
         return userMapper.toResponse(userService.getUserByEmail(email));
     }
@@ -50,7 +50,7 @@ public class UserController {
     public UserResponse getUserById(@PathVariable Long id) {
         User user = userService.getUserById(id);
         if (!currentUserService.isAdmin() && !currentUserService.isCurrentUser(id)) {
-            throw new AccessDeniedException("You can only access your own profile");
+            throw new AccessDeniedException("Vous ne pouvez acceder qu'a votre propre profil");
         }
         return userMapper.toResponse(user);
     }

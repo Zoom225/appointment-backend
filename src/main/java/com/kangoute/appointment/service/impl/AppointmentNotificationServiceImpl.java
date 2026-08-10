@@ -127,10 +127,10 @@ public class AppointmentNotificationServiceImpl implements AppointmentNotificati
     @Override
     public AppointmentNotification markAsRead(Long notificationId, Long recipientId) {
         AppointmentNotification notification = appointmentNotificationRepository.findById(notificationId)
-                .orElseThrow(() -> new ResourceNotFoundException("Notification not found with id: " + notificationId));
+                .orElseThrow(() -> new ResourceNotFoundException("Notification introuvable avec l'identifiant : " + notificationId));
 
         if (!notification.getRecipient().getId().equals(recipientId)) {
-            throw new ResourceNotFoundException("Notification not found with id: " + notificationId);
+            throw new ResourceNotFoundException("Notification introuvable avec l'identifiant : " + notificationId);
         }
 
         if (notification.getReadAt() == null) {
@@ -143,21 +143,21 @@ public class AppointmentNotificationServiceImpl implements AppointmentNotificati
 
     private String buildTitle(AppointmentNotificationType type) {
         return switch (type) {
-            case CREATED -> "Appointment created";
-            case UPDATED -> "Appointment updated";
-            case CANCELLED -> "Appointment cancelled";
-            case STATUS_CHANGED -> "Appointment status changed";
-            case REMINDER -> "Appointment reminder";
+            case CREATED -> "Rendez-vous cree";
+            case UPDATED -> "Rendez-vous modifie";
+            case CANCELLED -> "Rendez-vous annule";
+            case STATUS_CHANGED -> "Statut du rendez-vous modifie";
+            case REMINDER -> "Rappel de rendez-vous";
         };
     }
 
     private String buildMessage(AppointmentNotificationType type, Appointment appointment, String actorEmail) {
         return switch (type) {
-            case CREATED -> "Appointment created by " + actorEmail;
-            case UPDATED -> "Appointment updated by " + actorEmail;
-            case CANCELLED -> "Appointment cancelled by " + actorEmail;
-            case STATUS_CHANGED -> "Appointment status changed by " + actorEmail;
-            case REMINDER -> "Reminder for appointment starting at " + appointment.getStartDateTime();
+            case CREATED -> "Rendez-vous cree par " + actorEmail;
+            case UPDATED -> "Rendez-vous modifie par " + actorEmail;
+            case CANCELLED -> "Rendez-vous annule par " + actorEmail;
+            case STATUS_CHANGED -> "Statut du rendez-vous modifie par " + actorEmail;
+            case REMINDER -> "Rappel pour le rendez-vous commencant a " + appointment.getStartDateTime();
         };
     }
 

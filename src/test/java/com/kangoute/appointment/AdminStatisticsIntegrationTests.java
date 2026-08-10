@@ -100,7 +100,7 @@ class AdminStatisticsIntegrationTests {
                 LocalDateTime.of(2026, 8, 9, 0, 0)
         ));
 
-        assertEquals("Statistics period start must be before end", exception.getMessage());
+        assertEquals("La date de debut de la periode statistique doit etre avant la date de fin", exception.getMessage());
     }
 
     private User createUser(String email) {

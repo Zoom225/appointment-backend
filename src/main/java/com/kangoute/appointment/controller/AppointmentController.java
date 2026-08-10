@@ -52,7 +52,7 @@ public class AppointmentController {
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public AppointmentResponse createAppointment(@Valid @RequestBody AppointmentCreateRequest request) {
         if (!currentUserService.isAdmin() && !currentUserService.isCurrentUser(request.getUserId())) {
-            throw new AccessDeniedException("You can only create appointments for your own user account");
+            throw new AccessDeniedException("Vous ne pouvez creer que des rendez-vous pour votre propre compte utilisateur");
         }
         User user = userService.getUserById(request.getUserId());
         Appointment appointment = appointmentMapper.toEntity(request, user);
@@ -64,7 +64,7 @@ public class AppointmentController {
     public AppointmentResponse getAppointmentById(@PathVariable Long id) {
         Appointment appointment = appointmentService.getAppointmentById(id);
         if (!currentUserService.isAdmin() && !currentUserService.isCurrentUser(appointment.getUser().getId())) {
-            throw new AccessDeniedException("You can only access your own appointments");
+            throw new AccessDeniedException("Vous ne pouvez acceder qu'a vos propres rendez-vous");
         }
         return appointmentMapper.toResponse(appointment);
     }
@@ -77,7 +77,7 @@ public class AppointmentController {
     ) {
         Appointment existingAppointment = appointmentService.getAppointmentById(id);
         if (!currentUserService.isAdmin() && !currentUserService.isCurrentUser(existingAppointment.getUser().getId())) {
-            throw new AccessDeniedException("You can only update your own appointments");
+            throw new AccessDeniedException("Vous ne pouvez modifier que vos propres rendez-vous");
         }
         Appointment appointment = appointmentMapper.toEntity(request);
         return appointmentMapper.toResponse(appointmentService.updateAppointment(id, appointment));
@@ -88,7 +88,7 @@ public class AppointmentController {
     public AppointmentResponse cancelAppointment(@PathVariable Long id) {
         Appointment existingAppointment = appointmentService.getAppointmentById(id);
         if (!currentUserService.isAdmin() && !currentUserService.isCurrentUser(existingAppointment.getUser().getId())) {
-            throw new AccessDeniedException("You can only cancel your own appointments");
+            throw new AccessDeniedException("Vous ne pouvez annuler que vos propres rendez-vous");
         }
         return appointmentMapper.toResponse(appointmentService.cancelAppointment(id));
     }
@@ -106,7 +106,7 @@ public class AppointmentController {
         if (!currentUserService.isAdmin()) {
             Long currentUserId = currentUserService.getCurrentUserId();
             if (targetUserId != null && !targetUserId.equals(currentUserId)) {
-                throw new AccessDeniedException("You can only access your own appointments");
+                throw new AccessDeniedException("Vous ne pouvez acceder qu'a vos propres rendez-vous");
             }
             targetUserId = currentUserId;
         }
@@ -122,7 +122,7 @@ public class AppointmentController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date
     ) {
         if (!currentUserService.isAdmin() && !currentUserService.isCurrentUser(userId)) {
-            throw new AccessDeniedException("You can only access your own availability");
+            throw new AccessDeniedException("Vous ne pouvez acceder qu'a vos propres disponibilites");
         }
         return appointmentAvailabilityService.getAvailableSlots(userId, date);
     }

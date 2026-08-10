@@ -1,17 +1,17 @@
-# Appointment Backend
+# Backend de prise de rendez-vous
 
-Backend Spring Boot de gestion de rendez-vous pour consommation par un frontend Angular.
+Backend Spring Boot pour la gestion des rendez-vous, destiné a etre consomme par un frontend Angular.
 
-## Présentation
+## Presentation
 
-L’application couvre:
+L’application couvre :
 
-- inscription et connexion
-- gestion des rendez-vous
-- disponibilité par créneau
-- notifications persistées
-- historique des actions
-- statistiques administrateur
+- l’inscription et la connexion
+- la gestion des rendez-vous
+- la consultation des disponibilites
+- les notifications persistées
+- l’historique des actions
+- les statistiques administrateur
 
 L’authentification repose sur Spring Security avec JWT Bearer pour les appels API.
 
@@ -37,7 +37,7 @@ com.kangoute.appointment
 ## Technologies
 
 - Java 21
-- Spring Boot 4.1
+- Spring Boot
 - Spring Security
 - Spring Data JPA
 - PostgreSQL
@@ -57,7 +57,7 @@ com.kangoute.appointment
 ./mvnw spring-boot:run
 ```
 
-L’API démarre par défaut sur `http://localhost:8081`.
+L’API demarre par defaut sur `http://localhost:8081`.
 
 ### Variables d’environnement
 
@@ -73,10 +73,10 @@ JWT_EXPIRATION=PT2H
 
 ## Swagger
 
-- UI: `/swagger-ui.html`
-- OpenAPI: `/v3/api-docs`
+- UI : `/swagger-ui.html`
+- JSON OpenAPI : `/v3/api-docs`
 
-Une fois connecté, renseigner le jeton dans le schéma `bearerAuth`.
+Une fois connecte, renseigner le jeton dans le schema `bearerAuth`.
 
 ## Docker
 
@@ -86,33 +86,33 @@ Une fois connecté, renseigner le jeton dans le schéma `bearerAuth`.
 docker build -t appointment-backend .
 ```
 
-### Run
+### Execution
 
 ```bash
 docker compose up --build
 ```
 
-## Déploiement
+## Deploiement
 
-Le backend est compatible avec Render:
+Le backend est compatible avec Render :
 
 - exposer le port via `PORT`
 - connecter PostgreSQL Neon via `SPRING_DATASOURCE_URL`
 - fournir `SPRING_DATASOURCE_USERNAME` et `SPRING_DATASOURCE_PASSWORD`
-- définir `JWT_SECRET`
-- définir `CORS_ALLOWED_ORIGINS` sur l’URL du frontend Angular
+- definir `JWT_SECRET`
+- definir `CORS_ALLOWED_ORIGINS` sur l’URL du frontend Angular
 
 ## Structure fonctionnelle
 
 - `controller` expose les endpoints HTTP
-- `service` porte les contrats métier
-- `service/impl` contient les implémentations
-- `repository` parle à la base de données
+- `service` porte les contrats metier
+- `service/impl` contient les implementations
+- `repository` parle a la base de donnees
 - `entity` mappe le domaine en JPA
-- `dto` protège le contrat API
-- `mapper` convertit les entités en DTO
-- `security` gère l’authentification JWT
-- `exception` centralise les erreurs métiers
+- `dto` protege le contrat API
+- `mapper` convertit les entites en DTO
+- `security` gere l’authentification JWT
+- `exception` centralise les erreurs metier
 
 ## Diagramme d’architecture
 

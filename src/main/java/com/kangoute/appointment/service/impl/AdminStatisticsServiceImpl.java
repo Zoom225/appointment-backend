@@ -30,7 +30,7 @@ public class AdminStatisticsServiceImpl implements AdminStatisticsService {
         LocalDateTime effectiveFrom = periodFrom != null ? periodFrom : effectiveTo.minusDays(ACTIVE_WINDOW_DAYS);
 
         if (effectiveFrom.isAfter(effectiveTo)) {
-            throw new InvalidStatisticsPeriodException("Statistics period start must be before end");
+            throw new InvalidStatisticsPeriodException("La date de debut de la periode statistique doit etre avant la date de fin");
         }
 
         return AdminStatisticsResponse.builder()

@@ -30,7 +30,7 @@ public class UserServiceImpl implements UserService {
     @Override
     public User createUser(User user) {
         if (userRepository.existsByEmail(user.getEmail())) {
-            throw new DuplicateResourceException("User already exists with email: " + user.getEmail());
+            throw new DuplicateResourceException("Un utilisateur existe deja avec l'email : " + user.getEmail());
         }
 
         user.setPassword(passwordEncoder.encode(user.getPassword()));
@@ -43,14 +43,14 @@ public class UserServiceImpl implements UserService {
     @Transactional(readOnly = true)
     public User getUserByEmail(String email) {
         return userRepository.findByEmail(email)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with email: " + email));
+                .orElseThrow(() -> new ResourceNotFoundException("Utilisateur introuvable avec l'email : " + email));
     }
 
     @Override
     @Transactional(readOnly = true)
     public User getUserById(Long id) {
         return userRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Utilisateur introuvable avec l'identifiant : " + id));
     }
 
     @Override
@@ -73,7 +73,7 @@ public class UserServiceImpl implements UserService {
         User existingUser = getUserById(id);
 
         if (!existingUser.getEmail().equals(user.getEmail()) && userRepository.existsByEmail(user.getEmail())) {
-            throw new DuplicateResourceException("User already exists with email: " + user.getEmail());
+            throw new DuplicateResourceException("Un utilisateur existe deja avec l'email : " + user.getEmail());
         }
 
         existingUser.setFirstName(user.getFirstName());

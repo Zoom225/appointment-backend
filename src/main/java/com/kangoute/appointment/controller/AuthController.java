@@ -41,6 +41,6 @@ public class AuthController {
         SecurityContextHolder.setContext(context);
 
         User user = userService.getUserByEmail(request.getEmail());
-        return authMapper.toResponse(user, jwtService.generateToken(user), "Login successful");
+        return authMapper.toResponse(user, jwtService.generateToken(user), "Connexion reussie");
     }
 }
