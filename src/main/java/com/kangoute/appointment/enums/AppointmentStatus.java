@@ -6,8 +6,10 @@ import java.util.Locale;
 
 public enum AppointmentStatus {
     PENDING,
+    SCHEDULED,
     CONFIRMED,
-    CANCELLED;
+    CANCELLED,
+    COMPLETED;
 
     @JsonCreator(mode = JsonCreator.Mode.DELEGATING)
     public static AppointmentStatus fromJson(String value) {

@@ -80,6 +80,29 @@ class AppointmentStatusPatchIntegrationTests {
     }
 
     @Test
+    void patchAppointmentStatusCompletedReturns200AndPersistsStatus() throws Exception {
+        User owner = createUser("patch-completed@example.com");
+        String ownerToken = login(owner.getEmail(), "secret123");
+        Long appointmentId = createAppointment(owner.getId());
+
+        mockMvc.perform(patch("/api/appointments/{id}", appointmentId)
+                        .header("Authorization", "Bearer " + ownerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "status": "completed"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("COMPLETED"));
+
+        mockMvc.perform(get("/api/appointments/{id}", appointmentId)
+                        .header("Authorization", "Bearer " + ownerToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("COMPLETED"));
+    }
+
+    @Test
     void userCannotPatchAnotherUsersAppointmentStatus() throws Exception {
         User owner = createUser("patch-owner-denied@example.com");
         User intruder = createUser("patch-intruder@example.com");
