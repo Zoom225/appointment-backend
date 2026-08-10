@@ -38,7 +38,10 @@ public class AdminStatisticsServiceImpl implements AdminStatisticsService {
                 .activeUsersLast30Days(appointmentRepository.countDistinctUsersWithAppointmentsBetween(activeSince, now))
                 .totalAppointments(appointmentRepository.count())
                 .appointmentsInPeriod(appointmentRepository.countAppointmentsBetween(effectiveFrom, effectiveTo))
-                .pendingAppointments(appointmentRepository.countByStatus(AppointmentStatus.PENDING))
+                .pendingAppointments(
+                        appointmentRepository.countByStatus(AppointmentStatus.PENDING)
+                                + appointmentRepository.countByStatus(AppointmentStatus.SCHEDULED)
+                )
                 .confirmedAppointments(appointmentRepository.countByStatus(AppointmentStatus.CONFIRMED))
                 .cancelledAppointments(appointmentRepository.countByStatus(AppointmentStatus.CANCELLED))
                 .activeSince(activeSince)
