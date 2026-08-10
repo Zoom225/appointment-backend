@@ -1,6 +1,7 @@
 package com.kangoute.appointment.controller;
 
 import com.kangoute.appointment.dto.request.AppointmentCreateRequest;
+import com.kangoute.appointment.dto.request.AppointmentStatusUpdateRequest;
 import com.kangoute.appointment.dto.request.AppointmentUpdateRequest;
 import com.kangoute.appointment.dto.response.AppointmentAvailabilitySlotResponse;
 import com.kangoute.appointment.dto.response.AppointmentResponse;
@@ -81,6 +82,21 @@ public class AppointmentController {
         }
         Appointment appointment = appointmentMapper.toEntity(request);
         return appointmentMapper.toResponse(appointmentService.updateAppointment(id, appointment));
+    }
+
+    @PatchMapping("/{id}")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    public AppointmentResponse updateAppointmentStatus(
+            @PathVariable Long id,
+            @Valid @RequestBody AppointmentStatusUpdateRequest request
+    ) {
+        Appointment existingAppointment = appointmentService.getAppointmentById(id);
+        if (!currentUserService.isAdmin() && !currentUserService.isCurrentUser(existingAppointment.getUser().getId())) {
+            throw new AccessDeniedException("Vous ne pouvez modifier que vos propres rendez-vous");
+        }
+        return appointmentMapper.toResponse(
+                appointmentService.updateStatus(id, request.getStatus())
+        );
     }
 
     @PatchMapping("/{id}/cancel")

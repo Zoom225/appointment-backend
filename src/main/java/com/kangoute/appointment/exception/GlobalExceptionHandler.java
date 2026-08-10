@@ -1,12 +1,14 @@
 package com.kangoute.appointment.exception;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import lombok.extern.slf4j.Slf4j;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -55,6 +57,18 @@ public class GlobalExceptionHandler {
     public ResponseEntity<Map<String, String>> handleAccessDenied(AccessDeniedException ex) {
         return ResponseEntity.status(HttpStatus.FORBIDDEN)
                 .body(Map.of("message", ex.getMessage()));
+    }
+
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    public ResponseEntity<Map<String, String>> handleMethodNotSupported(HttpRequestMethodNotSupportedException ex) {
+        return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED)
+                .body(Map.of("message", "Methode HTTP non autorisee"));
+    }
+
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<Map<String, String>> handleMessageNotReadable(HttpMessageNotReadableException ex) {
+        return ResponseEntity.badRequest()
+                .body(Map.of("message", "Requete JSON invalide"));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
