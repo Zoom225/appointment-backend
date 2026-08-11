@@ -104,6 +104,18 @@ Le backend est compatible avec Render :
 
 ## Structure fonctionnelle
 
+## Compte de demonstration
+
+Un compte de demonstration peut etre active pour presenter l'application a un recruteur ou un employeur.
+
+- activation via `APP_DEMO_ENABLED=true`
+- email : `demo@gestion-rendez-vous.com`
+- mot de passe : `Demo2026!`
+- role : `ROLE_USER`
+- donnees fictives uniquement
+
+Ce compte sert uniquement aux tests de l'application. Il ne donne aucun acces administrateur et n'utilise aucune donnee sensible.
+
 - `controller` expose les endpoints HTTP
 - `service` porte les contrats metier
 - `service/impl` contient les implementations
