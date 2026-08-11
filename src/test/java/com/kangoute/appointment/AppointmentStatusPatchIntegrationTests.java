@@ -80,10 +80,50 @@ class AppointmentStatusPatchIntegrationTests {
     }
 
     @Test
-    void patchAppointmentStatusCompletedReturns200AndPersistsStatus() throws Exception {
+    void patchScheduledAppointmentToConfirmedReturns200() throws Exception {
+        User owner = createUser("patch-scheduled-confirmed@example.com");
+        String ownerToken = login(owner.getEmail(), "secret123");
+        Long appointmentId = createAppointment(owner.getId());
+
+        mockMvc.perform(patch("/api/appointments/{id}", appointmentId)
+                        .header("Authorization", "Bearer " + ownerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "status": "scheduled"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("SCHEDULED"));
+
+        mockMvc.perform(patch("/api/appointments/{id}", appointmentId)
+                        .header("Authorization", "Bearer " + ownerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "status": "confirmed"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("CONFIRMED"));
+    }
+
+    @Test
+    void patchConfirmedAppointmentToCompletedReturns200AndPersistsStatus() throws Exception {
         User owner = createUser("patch-completed@example.com");
         String ownerToken = login(owner.getEmail(), "secret123");
         Long appointmentId = createAppointment(owner.getId());
+
+        mockMvc.perform(patch("/api/appointments/{id}", appointmentId)
+                        .header("Authorization", "Bearer " + ownerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "status": "confirmed"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("CONFIRMED"));
 
         mockMvc.perform(patch("/api/appointments/{id}", appointmentId)
                         .header("Authorization", "Bearer " + ownerToken)
@@ -166,6 +206,35 @@ class AppointmentStatusPatchIntegrationTests {
 
         mockMvc.perform(patch("/api/appointments/{id}/cancel", appointmentId)
                         .header("Authorization", "Bearer " + ownerToken))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("CANCELLED"));
+    }
+
+    @Test
+    void patchScheduledAppointmentToCancelledReturns200() throws Exception {
+        User owner = createUser("patch-scheduled-cancelled@example.com");
+        String ownerToken = login(owner.getEmail(), "secret123");
+        Long appointmentId = createAppointment(owner.getId());
+
+        mockMvc.perform(patch("/api/appointments/{id}", appointmentId)
+                        .header("Authorization", "Bearer " + ownerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "status": "scheduled"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("SCHEDULED"));
+
+        mockMvc.perform(patch("/api/appointments/{id}", appointmentId)
+                        .header("Authorization", "Bearer " + ownerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "status": "cancelled"
+                                }
+                                """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("CANCELLED"));
     }
