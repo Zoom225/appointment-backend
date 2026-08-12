@@ -25,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.context.WebApplicationContext;
 
 import java.util.List;
+import java.util.HashSet;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -135,6 +136,23 @@ class DemoDataInitializerEnabledTests {
         assertEquals("User", reloaded.getLastName());
         assertEquals("existing@example.com", reloaded.getEmail());
         assertEquals(originalPassword, reloaded.getPassword());
+    }
+
+    @Test
+    void existingDemoUserIsReconciledWhenPasswordIsOutdated() {
+        User legacyDemoUser = getDemoUser();
+        legacyDemoUser.setPassword("Demo2026!");
+        legacyDemoUser.setRoles(new HashSet<>());
+        userRepository.save(legacyDemoUser);
+
+        demoDataInitializer.run(null);
+
+        User updated = getDemoUser();
+        assertNotEquals("Demo2026!", updated.getPassword());
+        assertTrue(passwordEncoder.matches("Demo2026!", updated.getPassword()));
+        assertFalse(updated.getRoles().stream().anyMatch(role -> role.getName() == RoleName.ROLE_ADMIN));
+        assertTrue(updated.getRoles().stream().anyMatch(role -> role.getName() == RoleName.ROLE_USER));
+        assertEquals(5, appointmentRepository.findByUserId(updated.getId()).size());
     }
 
     @Test

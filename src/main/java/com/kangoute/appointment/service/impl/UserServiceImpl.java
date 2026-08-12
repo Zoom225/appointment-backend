@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.HashSet;
 
 @Service
 @RequiredArgsConstructor
@@ -34,7 +35,7 @@ public class UserServiceImpl implements UserService {
         }
 
         user.setPassword(passwordEncoder.encode(user.getPassword()));
-        user.setRoles(Collections.singleton(roleService.createRole(RoleName.ROLE_USER)));
+        user.setRoles(new HashSet<>(Collections.singleton(roleService.createRole(RoleName.ROLE_USER))));
 
         return userRepository.save(user);
     }
@@ -80,7 +81,7 @@ public class UserServiceImpl implements UserService {
         existingUser.setLastName(user.getLastName());
         existingUser.setEmail(user.getEmail());
         existingUser.setPassword(passwordEncoder.encode(user.getPassword()));
-        existingUser.setRoles(user.getRoles());
+        existingUser.setRoles(user.getRoles() == null ? new HashSet<>() : new HashSet<>(user.getRoles()));
 
         return userRepository.save(existingUser);
     }

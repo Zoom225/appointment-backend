@@ -72,4 +72,43 @@ class AuthJwtIntegrationTests {
                 .andExpect(jsonPath("$.email").value("jwt.user@example.com"))
                 .andExpect(jsonPath("$.roles[0]").value("ROLE_USER"));
     }
+
+    @Test
+    void loginWithWrongPasswordReturnsUnauthorized() throws Exception {
+        mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).build();
+
+        User user = new User();
+        user.setFirstName("Jwt");
+        user.setLastName("User");
+        user.setEmail("wrong.password@example.com");
+        user.setPassword("secret123");
+        userService.createUser(user);
+
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "email": "wrong.password@example.com",
+                                  "password": "bad-password"
+                                }
+                                """))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.message").value("Email ou mot de passe incorrect"));
+    }
+
+    @Test
+    void loginWithUnknownUserReturnsUnauthorized() throws Exception {
+        mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).build();
+
+        mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "email": "missing.user@example.com",
+                                  "password": "secret123"
+                                }
+                                """))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.message").value("Email ou mot de passe incorrect"));
+    }
 }

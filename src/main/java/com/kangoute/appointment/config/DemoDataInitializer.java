@@ -3,18 +3,23 @@ package com.kangoute.appointment.config;
 import com.kangoute.appointment.entity.Appointment;
 import com.kangoute.appointment.entity.User;
 import com.kangoute.appointment.enums.AppointmentStatus;
+import com.kangoute.appointment.enums.RoleName;
 import com.kangoute.appointment.repository.AppointmentRepository;
 import com.kangoute.appointment.repository.UserRepository;
+import com.kangoute.appointment.service.RoleService;
 import com.kangoute.appointment.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
 
 @Component
 @RequiredArgsConstructor
@@ -25,11 +30,14 @@ public class DemoDataInitializer implements ApplicationRunner {
     private final UserRepository userRepository;
     private final AppointmentRepository appointmentRepository;
     private final UserService userService;
+    private final RoleService roleService;
+    private final PasswordEncoder passwordEncoder;
 
     @Override
     @Transactional
     public void run(ApplicationArguments args) {
         User demoUser = userRepository.findByEmail(demoProperties.getEmail())
+                .map(this::synchronizeDemoUser)
                 .orElseGet(this::createDemoUser);
 
         if (!appointmentRepository.findByUserId(demoUser.getId()).isEmpty()) {
@@ -46,6 +54,32 @@ public class DemoDataInitializer implements ApplicationRunner {
         demoUser.setEmail(demoProperties.getEmail());
         demoUser.setPassword(demoProperties.getPassword());
         return userService.createUser(demoUser);
+    }
+
+    private User synchronizeDemoUser(User existingUser) {
+        boolean passwordMatches = passwordEncoder.matches(
+                demoProperties.getPassword(),
+                existingUser.getPassword()
+        );
+        boolean hasOnlyUserRole = existingUser.getRoles() != null
+                && existingUser.getRoles().size() == 1
+                && existingUser.getRoles().stream().anyMatch(role -> role.getName() == RoleName.ROLE_USER);
+
+        if (Objects.equals(existingUser.getFirstName(), demoProperties.getFirstName())
+                && Objects.equals(existingUser.getLastName(), demoProperties.getLastName())
+                && Objects.equals(existingUser.getEmail(), demoProperties.getEmail())
+                && passwordMatches
+                && hasOnlyUserRole) {
+            return existingUser;
+        }
+
+        User demoUser = new User();
+        demoUser.setFirstName(demoProperties.getFirstName());
+        demoUser.setLastName(demoProperties.getLastName());
+        demoUser.setEmail(demoProperties.getEmail());
+        demoUser.setPassword(demoProperties.getPassword());
+        demoUser.setRoles(Set.of(roleService.createRole(RoleName.ROLE_USER)));
+        return userService.updateUser(existingUser.getId(), demoUser);
     }
 
     private List<Appointment> buildDemoAppointments(User demoUser) {
