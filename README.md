@@ -1,65 +1,110 @@
 # Backend de prise de rendez-vous
 
-Backend Spring Boot pour la gestion des rendez-vous, destiné a etre consomme par un frontend Angular.
+Backend Spring Boot pour gerer une application de prise de rendez-vous. Ce projet expose une API REST securisee, documentee avec Swagger, et pensee pour etre consommee par un frontend Angular.
 
-## Presentation
+## Objectif du backend
 
-L’application couvre :
+Le backend a ete mis en place pour couvrir les besoins suivants :
 
-- l’inscription et la connexion
-- la gestion des rendez-vous
-- la consultation des disponibilites
-- les notifications persistées
-- l’historique des actions
-- les statistiques administrateur
+- creation et connexion des utilisateurs
+- gestion des rendez-vous
+- consultation des disponibilites
+- notifications persistantes
+- historique des actions sur les rendez-vous
+- statistiques pour l administration
 
-L’authentification repose sur Spring Security avec JWT Bearer pour les appels API.
+L authentification repose sur Spring Security avec un jeton JWT transmis en `Bearer`.
 
-## Architecture
+## Mise en place technique
+
+Le projet a ete organise autour d une architecture classique en couches :
 
 ```text
 com.kangoute.appointment
-├── config
-├── security
-├── controller
-├── dto
-│   ├── request
-│   └── response
-├── entity
-├── enums
-├── exception
-├── mapper
-├── repository
-├── service
-└── service/impl
+|-- config
+|-- security
+|-- controller
+|-- dto
+|   |-- request
+|   `-- response
+|-- entity
+|-- enums
+|-- exception
+|-- mapper
+|-- repository
+|-- service
+`-- service/impl
 ```
 
-## Technologies
+### Role des couches
+
+- `controller` expose les endpoints HTTP
+- `service` porte la logique metier
+- `service/impl` contient les implementations
+- `repository` accede a la base de donnees
+- `entity` represente les donnees cote JPA
+- `dto` definit les contrats d entree et de sortie
+- `mapper` transforme les entites en DTO
+- `security` gere l auth JWT et le filtrage des requetes
+- `exception` centralise la gestion des erreurs metier
+
+## Choix techniques
+
+Le backend utilise :
 
 - Java 21
 - Spring Boot
 - Spring Security
 - Spring Data JPA
-- PostgreSQL
-- H2 pour les tests
-- JWT
-- Swagger / OpenAPI
-- Lombok
-- Maven
-- Docker
+- PostgreSQL en production
+- H2 pour les tests et le demarrage local sans base externe
+- JWT pour l authentication
+- Swagger / OpenAPI pour la documentation
+- Flyway pour les migrations
+- Lombok pour reduire le boilerplate
+- Docker pour le lancement conteneurise
 
-## Installation
+## Fonctionnalites implementees
 
-### Local
+### Utilisateurs et authentification
 
-```bash
-./mvnw clean test
-./mvnw spring-boot:run
-```
+- inscription utilisateur
+- connexion
+- generation du JWT
+- gestion des roles
+- compte de demonstration configurable
 
-L’API demarre par defaut sur `http://localhost:8081`.
+### Rendez-vous
 
-### Variables d’environnement
+- creation d un rendez-vous
+- mise a jour d un rendez-vous
+- annulation d un rendez-vous
+- controle des conflits de creneaux
+- verification des horaires autorises
+
+### Disponibilites
+
+- creneaux de travail configures par jour et par horaire
+- generation de slots de rendez-vous
+- controle du chevauchement
+
+### Notifications et suivi
+
+- notifications persistantes
+- rappel automatique des rendez-vous
+- journalisation des actions sur les rendez-vous
+
+### Administration
+
+- statistiques globales
+- gestion admin des utilisateurs
+- gestion admin des rendez-vous
+
+## Configuration
+
+Le projet lit sa configuration principale dans `src/main/resources/application.properties`.
+
+Exemple des variables attendues :
 
 ```bash
 PORT=8081
@@ -67,76 +112,100 @@ SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/appointment
 SPRING_DATASOURCE_USERNAME=postgres
 SPRING_DATASOURCE_PASSWORD=postgres
 CORS_ALLOWED_ORIGINS=http://localhost:4200
-JWT_SECRET=VGhpcy1kZWZhdWx0LXNlY3JldC1tdXN0LWJlLXN1YnN0aXR1dGVkLWF0LXByb2R1Y3Rpb24=
+JWT_SECRET=change-this-secret
 JWT_EXPIRATION=PT2H
+APP_DEMO_ENABLED=false
+APP_FRONTEND_URL=http://localhost:4200
 ```
 
-## Swagger
+### Points importants
 
-- UI : `/swagger-ui.html`
-- JSON OpenAPI : `/v3/api-docs`
+- si aucune base externe n est fournie, l application peut demarrer avec H2
+- le port est configurable via `PORT`
+- Swagger est disponible sur `/swagger-ui.html`
+- l API OpenAPI est disponible sur `/v3/api-docs`
 
-Une fois connecte, renseigner le jeton dans le schema `bearerAuth`.
+## Demarrage en local
 
-## Docker
+### Avec Maven
 
-### Build
+```bash
+./mvnw clean test
+./mvnw spring-boot:run
+```
+
+L application demarre par defaut sur `http://localhost:8081`.
+
+### Avec Docker
+
+Construction de l image :
 
 ```bash
 docker build -t appointment-backend .
 ```
 
-### Execution
+Demarrage avec Docker Compose :
 
 ```bash
 docker compose up --build
 ```
 
-## Deploiement
+## Structure du projet
 
-Le backend est compatible avec Render :
+Les principaux fichiers de code se trouvent dans `src/main/java/com/kangoute/appointment` :
 
-- exposer le port via `PORT`
-- connecter PostgreSQL Neon via `SPRING_DATASOURCE_URL`
-- fournir `SPRING_DATASOURCE_USERNAME` et `SPRING_DATASOURCE_PASSWORD`
-- definir `JWT_SECRET`
-- definir `CORS_ALLOWED_ORIGINS` sur l’URL du frontend Angular
+- `PriseDeRendezVousApplication` : point d entree Spring Boot
+- `config` : configuration globale, JWT, CORS, OpenAPI, donnees de demo
+- `controller` : exposition des routes REST
+- `dto` : objets echanges avec le frontend
+- `entity` : modeles persistants
+- `repository` : acces aux donnees
+- `service` : contrats metier
+- `service/impl` : logique applicative
+- `security` : authentification et contexte utilisateur
 
-## Structure fonctionnelle
+## Regles metier principales
 
-## Compte de demonstration
+- un utilisateur ne peut pas avoir deux rendez-vous qui se chevauchent
+- `startDateTime` doit etre strictement anterieur a `endDateTime`
+- un rendez-vous a un statut par defaut a la creation
+- les donnees sensibles ne sont pas exposees directement par les entites
+- les erreurs metier sont converties en reponses HTTP lisibles
 
-Un compte de demonstration peut etre active pour presenter l'application a un recruteur ou un employeur.
+## Comptes de demonstration
 
-- activation via `APP_DEMO_ENABLED=true`
+Un compte de demonstration peut etre active pour presenter le projet sans creer de vraies donnees.
+
+Activation :
+
+```bash
+APP_DEMO_ENABLED=true
+```
+
+Parametres par defaut :
+
 - email : `demo@gestion-rendez-vous.com`
 - mot de passe : `Demo2026!`
 - role : `ROLE_USER`
-- donnees fictives uniquement
 
-Ce compte sert uniquement aux tests de l'application. Il ne donne aucun acces administrateur et n'utilise aucune donnee sensible.
+## Deploiement
 
-- `controller` expose les endpoints HTTP
-- `service` porte les contrats metier
-- `service/impl` contient les implementations
-- `repository` parle a la base de donnees
-- `entity` mappe le domaine en JPA
-- `dto` protege le contrat API
-- `mapper` convertit les entites en DTO
-- `security` gere l’authentification JWT
-- `exception` centralise les erreurs metier
+Le backend est compatible avec une execution type Render ou autre hebergeur Spring Boot.
 
-## Diagramme d’architecture
+Points a fournir au deploiement :
 
-```text
-[Angular]
-    |
-    v
-[Controllers] -> [Services] -> [Repositories] -> [PostgreSQL / H2]
-       |             |
-       |             +--> [Security / JWT]
-       +--> [DTO / Mapper]
-```
+- `PORT`
+- `SPRING_DATASOURCE_URL`
+- `SPRING_DATASOURCE_USERNAME`
+- `SPRING_DATASOURCE_PASSWORD`
+- `JWT_SECRET`
+- `CORS_ALLOWED_ORIGINS`
+- `APP_FRONTEND_URL`
+
+## Documentation
+
+- `GUIDE_PROJET.md` : suivi chronologique de la mise en place du backend
+- `GUIDE_FRONTEND.md` : consignes pour l integration frontend
 
 ## Commandes utiles
 
