@@ -24,6 +24,8 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
+import java.util.LinkedHashSet;
+import java.util.Set;
 
 @Configuration
 @EnableMethodSecurity
@@ -95,23 +97,19 @@ public class SecurityConfig {
     }
 
     private List<String> resolveAllowedOriginPatterns(CorsProperties corsProperties) {
-        List<String> allowedOriginPatterns = List.of(
-                "http://localhost:[*]",
-                "http://127.0.0.1:[*]"
-        );
+        Set<String> allowedOriginPatterns = new LinkedHashSet<>();
+        allowedOriginPatterns.add("http://localhost:[*]");
+        allowedOriginPatterns.add("http://127.0.0.1:[*]");
+        allowedOriginPatterns.add("https://gestion-de-render-vous-*.vercel.app");
 
         String configuredFrontendUrl = corsProperties.getFrontendUrl();
         if (configuredFrontendUrl != null) {
             String normalizedFrontendUrl = configuredFrontendUrl.trim();
             if (!normalizedFrontendUrl.isEmpty()) {
-                return List.of(
-                        "http://localhost:[*]",
-                        "http://127.0.0.1:[*]",
-                        normalizedFrontendUrl
-                );
+                allowedOriginPatterns.add(normalizedFrontendUrl);
             }
         }
 
-        return allowedOriginPatterns;
+        return List.copyOf(allowedOriginPatterns);
     }
 }

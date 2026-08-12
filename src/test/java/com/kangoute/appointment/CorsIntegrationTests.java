@@ -40,6 +40,7 @@ class CorsIntegrationTests {
     );
 
     private static final String LOGIN_ORIGIN = "http://localhost:53638";
+    private static final String VERCEL_ORIGIN = "https://gestion-de-render-vous-co28p0nkb-kangoute.vercel.app";
     private static final String UNAUTHORIZED_ORIGIN = "https://malicious-example.invalid";
 
     @Autowired
@@ -98,6 +99,35 @@ class CorsIntegrationTests {
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, LOGIN_ORIGIN))
+                .andExpect(jsonPath("$.token").isNotEmpty());
+    }
+
+    @Test
+    void preflightFromVercelOriginIsAccepted() throws Exception {
+        mockMvc.perform(options("/api/auth/login")
+                        .header(HttpHeaders.ORIGIN, VERCEL_ORIGIN)
+                        .header(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "POST")
+                        .header(HttpHeaders.ACCESS_CONTROL_REQUEST_HEADERS, "Authorization,Content-Type,Accept"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, VERCEL_ORIGIN))
+                .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_METHODS, containsString("POST")));
+    }
+
+    @Test
+    void loginResponseFromVercelOriginContainsCorsHeaders() throws Exception {
+        createUser("cors.vercel@example.com", "secret123");
+
+        mockMvc.perform(post("/api/auth/login")
+                        .header(HttpHeaders.ORIGIN, VERCEL_ORIGIN)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "email": "cors.vercel@example.com",
+                                  "password": "secret123"
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, VERCEL_ORIGIN))
                 .andExpect(jsonPath("$.token").isNotEmpty());
     }
 
