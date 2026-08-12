@@ -1,110 +1,280 @@
-# Backend de prise de rendez-vous
+# Gestion de rendez-vous — Backend Spring Boot
 
-Backend Spring Boot pour gerer une application de prise de rendez-vous. Ce projet expose une API REST securisee, documentee avec Swagger, et pensee pour etre consommee par un frontend Angular.
+Backend REST de l'application Full Stack **Gestion de rendez-vous**, développé avec **Java 21 et Spring Boot**.
 
-## Objectif du backend
+Cette API assure l'authentification, la sécurité, la gestion des utilisateurs, des rendez-vous, des disponibilités et des notifications. Elle est destinée à être consommée par le frontend Angular de l'application.
 
-Le backend a ete mis en place pour couvrir les besoins suivants :
+## Démo en production
 
-- creation et connexion des utilisateurs
-- gestion des rendez-vous
-- consultation des disponibilites
-- notifications persistantes
-- historique des actions sur les rendez-vous
-- statistiques pour l administration
+| Service | Technologie / Hébergement |
+|---|---|
+| Backend | Spring Boot / Render |
+| Frontend | Angular / Vercel |
+| Base de données | PostgreSQL |
+| Documentation API | Swagger / OpenAPI |
+| Authentification | Spring Security / JWT |
 
-L authentification repose sur Spring Security avec un jeton JWT transmis en `Bearer`.
+### Liens
 
-## Mise en place technique
+Backend :
 
-Le projet a ete organise autour d une architecture classique en couches :
+`https://appointment-backend-vab1.onrender.com`
 
-```text
-com.kangoute.appointment
-|-- config
-|-- security
-|-- controller
-|-- dto
-|   |-- request
-|   `-- response
-|-- entity
-|-- enums
-|-- exception
-|-- mapper
-|-- repository
-|-- service
-`-- service/impl
-```
+Swagger :
 
-### Role des couches
+`https://appointment-backend-vab1.onrender.com/swagger-ui/index.html`
 
-- `controller` expose les endpoints HTTP
-- `service` porte la logique metier
-- `service/impl` contient les implementations
-- `repository` accede a la base de donnees
-- `entity` represente les donnees cote JPA
-- `dto` definit les contrats d entree et de sortie
-- `mapper` transforme les entites en DTO
-- `security` gere l auth JWT et le filtrage des requetes
-- `exception` centralise la gestion des erreurs metier
+API :
 
-## Choix techniques
+`https://appointment-backend-vab1.onrender.com/api`
 
-Le backend utilise :
+> Le backend étant hébergé sur Render, le premier appel peut prendre quelques secondes lorsque l'instance sort de veille.
 
-- Java 21
-- Spring Boot
-- Spring Security
-- Spring Data JPA
-- PostgreSQL en production
-- H2 pour les tests et le demarrage local sans base externe
-- JWT pour l authentication
-- Swagger / OpenAPI pour la documentation
-- Flyway pour les migrations
-- Lombok pour reduire le boilerplate
-- Docker pour le lancement conteneurise
+---
 
-## Fonctionnalites implementees
+## Fonctionnalités
 
-### Utilisateurs et authentification
+### Authentification et utilisateurs
 
-- inscription utilisateur
-- connexion
-- generation du JWT
-- gestion des roles
-- compte de demonstration configurable
+- inscription d'un utilisateur ;
+- connexion sécurisée ;
+- génération d'un JWT ;
+- authentification par Bearer Token ;
+- gestion des rôles ;
+- protection des endpoints avec Spring Security ;
+- compte de démonstration configurable.
 
 ### Rendez-vous
 
-- creation d un rendez-vous
-- mise a jour d un rendez-vous
-- annulation d un rendez-vous
-- controle des conflits de creneaux
-- verification des horaires autorises
+- création d'un rendez-vous ;
+- consultation des rendez-vous ;
+- modification d'un rendez-vous ;
+- annulation d'un rendez-vous ;
+- gestion des statuts ;
+- contrôle des conflits de créneaux ;
+- vérification des horaires autorisés ;
+- historique des actions.
 
-### Disponibilites
+### Disponibilités
 
-- creneaux de travail configures par jour et par horaire
-- generation de slots de rendez-vous
-- controle du chevauchement
+- consultation des disponibilités ;
+- gestion des horaires de travail ;
+- génération des créneaux disponibles ;
+- contrôle des chevauchements avec les rendez-vous existants.
 
-### Notifications et suivi
+### Notifications
 
-- notifications persistantes
-- rappel automatique des rendez-vous
-- journalisation des actions sur les rendez-vous
+- création de notifications persistantes ;
+- notifications liées aux rendez-vous ;
+- rappels ;
+- suivi des modifications et annulations.
 
 ### Administration
 
-- statistiques globales
-- gestion admin des utilisateurs
-- gestion admin des rendez-vous
+- gestion des utilisateurs ;
+- gestion des rendez-vous ;
+- statistiques globales.
+
+---
+
+## Stack technique
+
+- Java 21
+- Spring Boot
+- Spring Web
+- Spring Security
+- Spring Data JPA
+- Bean Validation
+- JWT
+- PostgreSQL
+- H2
+- Flyway
+- OpenAPI / Swagger
+- Lombok
+- Maven
+- Docker
+- JUnit / Spring Boot Test
+
+---
+
+## Architecture
+
+Le backend suit une architecture en couches avec séparation des responsabilités :
+
+```text
+src/main/java/com/kangoute/appointment
+│
+├── config
+├── security
+├── controller
+├── dto
+│   ├── request
+│   └── response
+├── entity
+├── enums
+├── exception
+├── mapper
+├── repository
+├── service
+│   └── impl
+│
+└── PriseDeRendezVousApplication.java
+```
+
+### Responsabilité des couches
+
+**Controller**
+
+Expose les endpoints REST et reçoit les requêtes HTTP.
+
+```text
+HTTP Request
+      ↓
+Controller
+```
+
+**Service**
+
+Contient les contrats de la logique métier.
+
+**Service / Impl**
+
+Contient l'implémentation de la logique métier de l'application.
+
+**Repository**
+
+Communique avec PostgreSQL grâce à Spring Data JPA.
+
+**Entity**
+
+Représente les données persistées dans la base de données.
+
+**DTO**
+
+Définit les données acceptées et retournées par l'API sans exposer directement les entités JPA.
+
+**Mapper**
+
+Assure les conversions entre entités et DTO.
+
+**Security**
+
+Gère l'authentification JWT et la protection des ressources.
+
+**Exception**
+
+Centralise la gestion des erreurs de l'API.
+
+---
+
+## Flux d'une requête
+
+L'architecture générale suit le flux :
+
+```text
+Frontend Angular
+       ↓
+HTTP / REST
+       ↓
+JWT Bearer Token
+       ↓
+Spring Security
+       ↓
+Controller
+       ↓
+Service
+       ↓
+ServiceImpl
+       ↓
+Repository
+       ↓
+Spring Data JPA
+       ↓
+PostgreSQL
+```
+
+Cette séparation permet de conserver une architecture maintenable et de limiter les responsabilités de chaque couche.
+
+---
+
+## Authentification JWT
+
+L'authentification repose sur **Spring Security et JWT**.
+
+Flux de connexion :
+
+```text
+Utilisateur
+     ↓
+POST /api/auth/login
+     ↓
+Spring Security
+     ↓
+Vérification des identifiants
+     ↓
+Génération JWT
+     ↓
+Frontend Angular
+     ↓
+Authorization: Bearer <token>
+     ↓
+API protégée
+```
+
+Le frontend transmet ensuite automatiquement le JWT dans les requêtes nécessitant une authentification.
+
+La sécurité réelle des ressources est contrôlée côté backend par Spring Security.
+
+---
+
+## API REST
+
+### Authentification
+
+```http
+POST /api/auth/login
+```
+
+### Rendez-vous
+
+Exemples :
+
+```http
+POST /api/appointments
+PATCH /api/appointments/{id}
+```
+
+La liste complète et les contrats des endpoints sont disponibles dans Swagger :
+
+`https://appointment-backend-vab1.onrender.com/swagger-ui/index.html`
+
+---
+
+## Règles métier principales
+
+Le backend applique notamment les règles suivantes :
+
+- un utilisateur ne peut pas avoir deux rendez-vous qui se chevauchent ;
+- la date de début doit être strictement antérieure à la date de fin ;
+- les créneaux doivent respecter les disponibilités autorisées ;
+- un rendez-vous reçoit un statut lors de sa création ;
+- les modifications passent par la couche métier ;
+- les données sensibles ne sont pas exposées directement à travers les entités JPA ;
+- les erreurs métier sont converties en réponses HTTP adaptées.
+
+---
 
 ## Configuration
 
-Le projet lit sa configuration principale dans `src/main/resources/application.properties`.
+La configuration principale se trouve dans :
 
-Exemple des variables attendues :
+```text
+src/main/resources/application.properties
+```
+
+Les informations sensibles sont fournies au moyen de variables d'environnement.
+
+Exemple :
 
 ```bash
 PORT=8081
@@ -118,63 +288,37 @@ APP_DEMO_ENABLED=false
 APP_FRONTEND_URL=http://localhost:4200
 ```
 
-### Points importants
+> Les véritables secrets de production ne doivent jamais être enregistrés dans Git.
 
-- si aucune base externe n est fournie, l application peut demarrer avec H2
-- le port est configurable via `PORT`
-- Swagger est disponible sur `/swagger-ui.html`
-- l API OpenAPI est disponible sur `/v3/api-docs`
+---
 
-## Demarrage en local
+## Base de données
 
-### Avec Maven
+En production, l'application utilise :
 
-```bash
-./mvnw clean test
-./mvnw spring-boot:run
+```text
+PostgreSQL
 ```
 
-L application demarre par defaut sur `http://localhost:8081`.
+La persistance est gérée avec :
 
-### Avec Docker
-
-Construction de l image :
-
-```bash
-docker build -t appointment-backend .
+```text
+Spring Data JPA
 ```
 
-Demarrage avec Docker Compose :
+Les migrations de base de données sont gérées avec :
 
-```bash
-docker compose up --build
+```text
+Flyway
 ```
 
-## Structure du projet
+H2 peut être utilisé pour les tests ou certains environnements locaux.
 
-Les principaux fichiers de code se trouvent dans `src/main/java/com/kangoute/appointment` :
+---
 
-- `PriseDeRendezVousApplication` : point d entree Spring Boot
-- `config` : configuration globale, JWT, CORS, OpenAPI, donnees de demo
-- `controller` : exposition des routes REST
-- `dto` : objets echanges avec le frontend
-- `entity` : modeles persistants
-- `repository` : acces aux donnees
-- `service` : contrats metier
-- `service/impl` : logique applicative
-- `security` : authentification et contexte utilisateur
+## Compte de démonstration
 
-## Regles metier principales
-
-- un utilisateur ne peut pas avoir deux rendez-vous qui se chevauchent
-- `startDateTime` doit etre strictement anterieur a `endDateTime`
-- un rendez-vous a un statut par defaut a la creation
-- les donnees sensibles ne sont pas exposees directement par les entites
-- les erreurs metier sont converties en reponses HTTP lisibles
-
-## Comptes de demonstration
-
-Un compte de demonstration peut etre active pour presenter le projet sans creer de vraies donnees.
+Le projet permet d'activer un compte de démonstration destiné à la présentation de l'application.
 
 Activation :
 
@@ -182,35 +326,216 @@ Activation :
 APP_DEMO_ENABLED=true
 ```
 
-Parametres par defaut :
+Compte de démonstration :
 
-- email : `demo@gestion-rendez-vous.com`
-- mot de passe : `Demo2026!`
-- role : `ROLE_USER`
+```text
+Email : demo@gestion-rendez-vous.com
+Mot de passe : Demo2026!
+Rôle : ROLE_USER
+```
 
-## Deploiement
+> Ce compte est destiné uniquement à la démonstration de l'application.
 
-Le backend est compatible avec une execution type Render ou autre hebergeur Spring Boot.
+---
 
-Points a fournir au deploiement :
+## Installation locale
 
-- `PORT`
-- `SPRING_DATASOURCE_URL`
-- `SPRING_DATASOURCE_USERNAME`
-- `SPRING_DATASOURCE_PASSWORD`
-- `JWT_SECRET`
-- `CORS_ALLOWED_ORIGINS`
-- `APP_FRONTEND_URL`
+### Prérequis
 
-## Documentation
+- Java 21
+- Maven ou Maven Wrapper
+- PostgreSQL, selon la configuration choisie
 
-- `GUIDE_PROJET.md` : suivi chronologique de la mise en place du backend
-- `GUIDE_FRONTEND.md` : consignes pour l integration frontend
+Vérifier Java :
+
+```bash
+java -version
+```
+
+---
+
+## Lancer les tests
+
+Sous Windows :
+
+```bash
+mvnw.cmd test
+```
+
+Sous Linux/macOS :
+
+```bash
+./mvnw test
+```
+
+---
+
+## Démarrer l'application
+
+Sous Windows :
+
+```bash
+mvnw.cmd spring-boot:run
+```
+
+Sous Linux/macOS :
+
+```bash
+./mvnw spring-boot:run
+```
+
+Par défaut :
+
+```text
+http://localhost:8081
+```
+
+Swagger local :
+
+```text
+http://localhost:8081/swagger-ui/index.html
+```
+
+---
+
+## Docker
+
+Construire l'image :
+
+```bash
+docker build -t appointment-backend .
+```
+
+Démarrer avec Docker Compose :
+
+```bash
+docker compose up --build
+```
+
+---
+
+## Tests
+
+Le backend dispose de tests permettant de vérifier différentes couches de l'application.
+
+Les tests permettent notamment de contrôler :
+
+- la logique métier ;
+- les services ;
+- les contrôleurs ;
+- les repositories ;
+- les validations ;
+- certains comportements de sécurité.
+
+Commande :
+
+```bash
+./mvnw test
+```
+
+Sous Windows :
+
+```bash
+mvnw.cmd test
+```
+
+---
+
+## Déploiement
+
+Le backend est actuellement déployé sur **Render**.
+
+Les principales variables nécessaires en production sont :
+
+```text
+PORT
+SPRING_DATASOURCE_URL
+SPRING_DATASOURCE_USERNAME
+SPRING_DATASOURCE_PASSWORD
+JWT_SECRET
+CORS_ALLOWED_ORIGINS
+APP_FRONTEND_URL
+```
+
+Le frontend Angular déployé sur Vercel communique avec cette API en HTTPS.
+
+---
+
+## Sécurité
+
+Le projet applique plusieurs mécanismes de sécurité :
+
+- Spring Security ;
+- authentification JWT ;
+- Bearer Token ;
+- endpoints protégés ;
+- contrôle des rôles ;
+- validation des entrées ;
+- DTO pour limiter l'exposition des entités ;
+- gestion centralisée des exceptions ;
+- configuration CORS ;
+- secrets fournis par variables d'environnement.
+
+---
+
+## Documentation complémentaire
+
+Le projet contient également :
+
+```text
+GUIDE_PROJET.md
+GUIDE_FRONTEND.md
+```
+
+`GUIDE_PROJET.md` documente la mise en place du backend.
+
+`GUIDE_FRONTEND.md` contient les informations utiles pour l'intégration avec le frontend Angular.
+
+---
 
 ## Commandes utiles
 
 ```bash
-./mvnw -q test
-./mvnw -q -DskipTests compile
+./mvnw test
+./mvnw -DskipTests compile
+./mvnw spring-boot:run
 docker compose up --build
 ```
+
+---
+
+## État du projet
+
+- Backend Spring Boot développé
+- API REST opérationnelle
+- Authentification JWT opérationnelle
+- Spring Security configuré
+- PostgreSQL connecté
+- Gestion des rendez-vous opérationnelle
+- Disponibilités opérationnelles
+- Notifications opérationnelles
+- Swagger disponible
+- Tests backend présents
+- Backend déployé sur Render
+- Frontend Angular connecté
+- Application Full Stack disponible en production
+
+---
+
+## Objectif du projet
+
+Ce projet démontre la conception et le développement d'un backend professionnel basé sur :
+
+- Java ;
+- Spring Boot ;
+- architecture en couches ;
+- API REST ;
+- Spring Security ;
+- JWT ;
+- JPA ;
+- PostgreSQL ;
+- tests automatisés ;
+- Docker ;
+- déploiement cloud.
+
+Il constitue un projet de démonstration destiné à présenter mes compétences en développement **Java / Spring Boot / Angular**.
