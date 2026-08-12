@@ -2,6 +2,7 @@ package com.kangoute.appointment.config;
 
 import com.kangoute.appointment.security.CustomUserDetailsService;
 import com.kangoute.appointment.security.JwtAuthenticationFilter;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -26,6 +27,7 @@ import java.util.List;
 
 @Configuration
 @EnableMethodSecurity
+@EnableConfigurationProperties(CorsProperties.class)
 public class SecurityConfig {
 
     @Bean
@@ -78,31 +80,38 @@ public class SecurityConfig {
     }
 
     @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
+    public CorsConfigurationSource corsConfigurationSource(CorsProperties corsProperties) {
         CorsConfiguration configuration = new CorsConfiguration();
-
-        configuration.setAllowedOriginPatterns(List.of(
-                "http://localhost:4200",
-                "https://appointment-front-*.vercel.app"
-        ));
-
-        configuration.setAllowedMethods(List.of(
-                "GET",
-                "POST",
-                "PUT",
-                "PATCH",
-                "DELETE",
-                "OPTIONS"
-        ));
-
-        configuration.setAllowedHeaders(List.of("*"));
-
+        configuration.setAllowedOriginPatterns(resolveAllowedOriginPatterns(corsProperties));
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept", "Origin"));
         configuration.setExposedHeaders(List.of("Authorization"));
-
-        configuration.setAllowCredentials(true);
+        configuration.setAllowCredentials(false);
+        configuration.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", configuration);
         return source;
+    }
+
+    private List<String> resolveAllowedOriginPatterns(CorsProperties corsProperties) {
+        List<String> allowedOriginPatterns = List.of(
+                "http://localhost:[*]",
+                "http://127.0.0.1:[*]"
+        );
+
+        String configuredFrontendUrl = corsProperties.getFrontendUrl();
+        if (configuredFrontendUrl != null) {
+            String normalizedFrontendUrl = configuredFrontendUrl.trim();
+            if (!normalizedFrontendUrl.isEmpty()) {
+                return List.of(
+                        "http://localhost:[*]",
+                        "http://127.0.0.1:[*]",
+                        normalizedFrontendUrl
+                );
+            }
+        }
+
+        return allowedOriginPatterns;
     }
 }
