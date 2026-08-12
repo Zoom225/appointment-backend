@@ -100,7 +100,7 @@ public class SecurityConfig {
         Set<String> allowedOriginPatterns = new LinkedHashSet<>();
         allowedOriginPatterns.add("http://localhost:[*]");
         allowedOriginPatterns.add("http://127.0.0.1:[*]");
-        allowedOriginPatterns.add("https://gestion-de-render-vous-*.vercel.app");
+        allowedOriginPatterns.add("https://gestion-de-rendez-vous-*.vercel.app");
 
         String configuredFrontendUrl = corsProperties.getFrontendUrl();
         if (configuredFrontendUrl != null) {

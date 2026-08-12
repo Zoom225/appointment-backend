@@ -40,7 +40,7 @@ class CorsIntegrationTests {
     );
 
     private static final String LOGIN_ORIGIN = "http://localhost:53638";
-    private static final String VERCEL_ORIGIN = "https://gestion-de-render-vous-co28p0nkb-kangoute.vercel.app";
+    private static final String VERCEL_ORIGIN = "https://gestion-de-rendez-vous-co28p0nkb-kangoute.vercel.app";
     private static final String UNAUTHORIZED_ORIGIN = "https://malicious-example.invalid";
 
     @Autowired
