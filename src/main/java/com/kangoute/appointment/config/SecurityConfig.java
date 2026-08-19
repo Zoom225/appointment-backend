@@ -86,7 +86,7 @@ public class SecurityConfig {
         CorsConfiguration configuration = new CorsConfiguration();
         configuration.setAllowedOriginPatterns(resolveAllowedOriginPatterns(corsProperties));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        configuration.setAllowedHeaders(List.of("Authorization", "Content-Type", "Accept", "Origin"));
+        configuration.setAllowedHeaders(List.of("*"));
         configuration.setExposedHeaders(List.of("Authorization"));
         configuration.setAllowCredentials(false);
         configuration.setMaxAge(3600L);
@@ -98,10 +98,10 @@ public class SecurityConfig {
 
     private List<String> resolveAllowedOriginPatterns(CorsProperties corsProperties) {
         Set<String> allowedOriginPatterns = new LinkedHashSet<>();
-        allowedOriginPatterns.add("http://localhost:[*]");
-        allowedOriginPatterns.add("http://127.0.0.1:[*]");
-        allowedOriginPatterns.add("https://gestion-de-rendez-vous.vercel.app");
-        allowedOriginPatterns.add("https://gestion-de-rendez-vous-*.vercel.app");
+        allowedOriginPatterns.add("http://localhost:*");
+        allowedOriginPatterns.add("http://127.0.0.1:*");
+        allowedOriginPatterns.add("https://appointment-front-gilt.vercel.app");
+        allowedOriginPatterns.add("https://*.vercel.app");
 
         String configuredFrontendUrl = corsProperties.getFrontendUrl();
         if (configuredFrontendUrl != null) {
