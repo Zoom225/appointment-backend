@@ -1,0 +1,14 @@
+  feature/admin-appointments-management[m
+  feature/admin-users-management[m
+  feature/appointment-business-rules[m
+  feature/authentication[m
+  feature/authorization-roles[m
+* [32mfeature/backend-dto-mapping-improvements[m
+  feature/configure-swagger[m
+  feature/create-appointment-controller[m
+  feature/create-appointment-entity[m
+  feature/create-role-entity[m
+  feature/create-user-entity[m
+  git-commit--m-Add-admin-appointment-management[m
+  master[m
+  mise-en-place-docker[m

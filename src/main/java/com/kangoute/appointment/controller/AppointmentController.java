@@ -80,8 +80,8 @@ public class AppointmentController {
         if (!currentUserService.isAdmin() && !currentUserService.isCurrentUser(existingAppointment.getUser().getId())) {
             throw new AccessDeniedException("Vous ne pouvez modifier que vos propres rendez-vous");
         }
-        Appointment appointment = appointmentMapper.toEntity(request);
-        return appointmentMapper.toResponse(appointmentService.updateAppointment(id, appointment));
+        appointmentMapper.updateEntity(request, existingAppointment);
+        return appointmentMapper.toResponse(appointmentService.updateAppointment(id, existingAppointment));
     }
 
     @PatchMapping("/{id}")

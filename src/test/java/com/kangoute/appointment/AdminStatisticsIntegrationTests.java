@@ -19,6 +19,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 
@@ -50,7 +51,7 @@ class AdminStatisticsIntegrationTests {
         User userB = createUser("stats.b@example.com");
         authenticateAs(adminUser());
 
-        LocalDate date = LocalDate.of(2026, 8, 3);
+        LocalDate date = recentWorkingDate();
 
         Appointment appointmentA = appointmentService.createAppointment(Appointment.builder()
                 .user(userA)
@@ -130,5 +131,13 @@ class AdminStatisticsIntegrationTests {
         UsernamePasswordAuthenticationToken authentication =
                 new UsernamePasswordAuthenticationToken(principal, user.getPassword(), principal.getAuthorities());
         SecurityContextHolder.getContext().setAuthentication(authentication);
+    }
+
+    private LocalDate recentWorkingDate() {
+        LocalDate date = LocalDate.now().minusDays(1);
+        while (date.getDayOfWeek() == DayOfWeek.SATURDAY || date.getDayOfWeek() == DayOfWeek.SUNDAY) {
+            date = date.minusDays(1);
+        }
+        return date;
     }
 }

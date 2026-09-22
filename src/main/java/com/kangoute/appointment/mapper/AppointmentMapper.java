@@ -19,12 +19,10 @@ public class AppointmentMapper {
         return appointment;
     }
 
-    public Appointment toEntity(AppointmentUpdateRequest request) {
-        Appointment appointment = new Appointment();
+    public void updateEntity(AppointmentUpdateRequest request, Appointment appointment) {
         appointment.setStartDateTime(request.getStartDateTime());
         appointment.setEndDateTime(request.getEndDateTime());
         appointment.setReason(request.getReason());
-        return appointment;
     }
 
     public AppointmentResponse toResponse(Appointment appointment) {

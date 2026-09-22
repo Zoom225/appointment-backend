@@ -20,6 +20,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
+import java.time.DayOfWeek;
+import java.time.LocalDate;
 import java.util.Set;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -244,19 +246,80 @@ class AppointmentStatusPatchIntegrationTests {
         User owner = createUser("patch-put@example.com");
         String ownerToken = login(owner.getEmail(), "secret123");
         Long appointmentId = createAppointment(owner.getId());
+        LocalDate date = nextWorkingDate();
 
         mockMvc.perform(put("/api/appointments/{id}", appointmentId)
                         .header("Authorization", "Bearer " + ownerToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "startDateTime": "2026-08-10T10:00:00",
-                                  "endDateTime": "2026-08-10T10:30:00",
+                                  "startDateTime": "%s",
+                                  "endDateTime": "%s",
                                   "reason": "Updated reason"
                                 }
-                                """))
+                                """.formatted(date.atTime(10, 0), date.atTime(10, 30))))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.reason").value("Updated reason"));
+    }
+
+    @Test
+    void postAppointmentRejectsPastStartDate() throws Exception {
+        User owner = createUser("appointment-past-create@example.com");
+        String ownerToken = login(owner.getEmail(), "secret123");
+
+        mockMvc.perform(post("/api/appointments")
+                        .header("Authorization", "Bearer " + ownerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "startDateTime": "2026-08-10T10:00:00",
+                                  "endDateTime": "2026-08-10T10:30:00",
+                                  "reason": "Past start",
+                                  "userId": %d
+                                }
+                                """.formatted(owner.getId())))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void putAppointmentRejectsEndBeforeStart() throws Exception {
+        User owner = createUser("appointment-invalid-update@example.com");
+        String ownerToken = login(owner.getEmail(), "secret123");
+        Long appointmentId = createAppointment(owner.getId());
+        LocalDate date = nextWorkingDate();
+
+        mockMvc.perform(put("/api/appointments/{id}", appointmentId)
+                        .header("Authorization", "Bearer " + ownerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "startDateTime": "%s",
+                                  "endDateTime": "%s",
+                                  "reason": "Invalid range"
+                                }
+                                """.formatted(date.atTime(11, 0), date.atTime(10, 30))))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void postAppointmentWithValidDatesReturnsCreated() throws Exception {
+        User owner = createUser("appointment-valid-create@example.com");
+        String ownerToken = login(owner.getEmail(), "secret123");
+        LocalDate date = nextWorkingDate();
+
+        mockMvc.perform(post("/api/appointments")
+                        .header("Authorization", "Bearer " + ownerToken)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "startDateTime": "%s",
+                                  "endDateTime": "%s",
+                                  "reason": "Valid create",
+                                  "userId": %d
+                                }
+                                """.formatted(date.atTime(12, 0), date.atTime(12, 30), owner.getId())))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.reason").value("Valid create"));
     }
 
     private User createUser(String email) {
@@ -307,5 +370,13 @@ class AppointmentStatusPatchIntegrationTests {
                 .build();
 
         return appointmentService.createAppointment(appointment).getId();
+    }
+
+    private LocalDate nextWorkingDate() {
+        LocalDate date = LocalDate.now().plusDays(14);
+        while (date.getDayOfWeek() == DayOfWeek.SATURDAY || date.getDayOfWeek() == DayOfWeek.SUNDAY) {
+            date = date.plusDays(1);
+        }
+        return date;
     }
 }
