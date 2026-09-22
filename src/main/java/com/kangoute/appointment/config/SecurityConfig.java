@@ -2,6 +2,7 @@ package com.kangoute.appointment.config;
 
 import com.kangoute.appointment.security.CustomUserDetailsService;
 import com.kangoute.appointment.security.JwtAuthenticationFilter;
+import com.kangoute.appointment.security.ApiSecurityErrorHandler;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -36,15 +37,18 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(
             HttpSecurity http,
             JwtAuthenticationFilter jwtAuthenticationFilter,
-            AuthenticationProvider authenticationProvider
+            AuthenticationProvider authenticationProvider,
+            ApiSecurityErrorHandler securityErrorHandler
     ) throws Exception {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .cors(Customizer.withDefaults())
+                .exceptionHandling(errors -> errors.authenticationEntryPoint(securityErrorHandler)
+                        .accessDeniedHandler(securityErrorHandler))
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/**").permitAll()
-                        .requestMatchers(HttpMethod.POST, "/api/users", "/api/users/**").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/users").permitAll()
                         .requestMatchers(
                                 "/swagger-ui.html",
                                 "/swagger-ui/**",
@@ -84,7 +88,7 @@ public class SecurityConfig {
     @Bean
     public CorsConfigurationSource corsConfigurationSource(CorsProperties corsProperties) {
         CorsConfiguration configuration = new CorsConfiguration();
-        configuration.setAllowedOriginPatterns(resolveAllowedOriginPatterns(corsProperties));
+        configuration.setAllowedOrigins(resolveAllowedOrigins(corsProperties));
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
         configuration.setAllowedHeaders(List.of("*"));
         configuration.setExposedHeaders(List.of("Authorization"));
@@ -96,21 +100,25 @@ public class SecurityConfig {
         return source;
     }
 
-    private List<String> resolveAllowedOriginPatterns(CorsProperties corsProperties) {
-        Set<String> allowedOriginPatterns = new LinkedHashSet<>();
-        allowedOriginPatterns.add("http://localhost:*");
-        allowedOriginPatterns.add("http://127.0.0.1:*");
-        allowedOriginPatterns.add("https://appointment-front-gilt.vercel.app");
-        allowedOriginPatterns.add("https://*.vercel.app");
+    private List<String> resolveAllowedOrigins(CorsProperties corsProperties) {
+        Set<String> allowedOrigins = new LinkedHashSet<>();
+        allowedOrigins.addAll(corsProperties.getAllowedOrigins());
 
         String configuredFrontendUrl = corsProperties.getFrontendUrl();
         if (configuredFrontendUrl != null) {
             String normalizedFrontendUrl = configuredFrontendUrl.trim();
             if (!normalizedFrontendUrl.isEmpty()) {
-                allowedOriginPatterns.add(normalizedFrontendUrl);
+                allowedOrigins.add(normalizedFrontendUrl);
             }
         }
 
-        return List.copyOf(allowedOriginPatterns);
+        if (allowedOrigins.isEmpty()) {
+            allowedOrigins.add("http://localhost:4200");
+            allowedOrigins.add("http://127.0.0.1:4200");
+        }
+        if (allowedOrigins.stream().anyMatch(origin -> origin.contains("*"))) {
+            throw new IllegalArgumentException("CORS origins must be explicit URLs without wildcards");
+        }
+        return List.copyOf(allowedOrigins);
     }
 }

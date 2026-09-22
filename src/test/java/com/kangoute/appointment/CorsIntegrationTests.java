@@ -27,19 +27,17 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest
+@SpringBootTest(properties = {"app.cors.frontend-url=https://appointment-front-gilt.vercel.app", "app.cors.allowed-origins=http://localhost:4200,http://127.0.0.1:4200"})
 @Transactional
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class CorsIntegrationTests {
 
     private static final List<String> ALLOWED_LOCAL_ORIGINS = List.of(
             "http://localhost:4200",
-            "http://localhost:4300",
-            "http://localhost:53638",
             "http://127.0.0.1:4200"
     );
 
-    private static final String LOGIN_ORIGIN = "http://localhost:53638";
+    private static final String LOGIN_ORIGIN = "http://localhost:4200";
     private static final String VERCEL_ORIGIN = "https://appointment-front-gilt.vercel.app";
     private static final String VERCEL_PREVIEW_ORIGIN = "https://appointment-front-preview-123.vercel.app";
     private static final String UNAUTHORIZED_ORIGIN = "https://malicious-example.invalid";
@@ -74,7 +72,7 @@ class CorsIntegrationTests {
     }
 
     @Test
-    void loginPreflightFromLocalhost53638IsAccepted() throws Exception {
+    void loginPreflightFromLocalhostIsAccepted() throws Exception {
         mockMvc.perform(options("/api/auth/login")
                         .header(HttpHeaders.ORIGIN, LOGIN_ORIGIN)
                         .header(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "POST")
@@ -115,14 +113,13 @@ class CorsIntegrationTests {
     }
 
     @Test
-    void preflightFromAnyVercelPreviewOriginIsAccepted() throws Exception {
+    void preflightFromUnconfiguredVercelPreviewOriginIsRejected() throws Exception {
         mockMvc.perform(options("/api/auth/login")
                         .header(HttpHeaders.ORIGIN, VERCEL_PREVIEW_ORIGIN)
                         .header(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "POST")
                         .header(HttpHeaders.ACCESS_CONTROL_REQUEST_HEADERS, "Authorization,Content-Type,Accept"))
-                .andExpect(status().isOk())
-                .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, VERCEL_PREVIEW_ORIGIN))
-                .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_METHODS, containsString("POST")));
+                .andExpect(status().isForbidden())
+                .andExpect(header().doesNotExist(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN));
     }
 
     @Test
@@ -159,7 +156,7 @@ class CorsIntegrationTests {
 
         mockMvc.perform(get("/api/users/{id}", user.getId())
                         .header(HttpHeaders.ORIGIN, "http://localhost:4200"))
-                .andExpect(status().isForbidden())
+                .andExpect(status().isUnauthorized())
                 .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, "http://localhost:4200"));
     }
 
