@@ -2,7 +2,6 @@ package com.kangoute.appointment.controller;
 
 import com.kangoute.appointment.dto.request.UserAdminUpdateRequest;
 import com.kangoute.appointment.dto.response.UserResponse;
-import com.kangoute.appointment.entity.Role;
 import com.kangoute.appointment.entity.User;
 import com.kangoute.appointment.enums.RoleName;
 import com.kangoute.appointment.mapper.UserMapper;
@@ -22,8 +21,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-
-import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/admin/users")
@@ -53,15 +50,7 @@ public class AdminUserController {
 
     @PutMapping("/{id}")
     public UserResponse updateUser(@PathVariable Long id, @Valid @RequestBody UserAdminUpdateRequest request) {
-        User user = new User();
-        user.setFirstName(request.getFirstName());
-        user.setLastName(request.getLastName());
-        user.setEmail(request.getEmail());
-        user.setPassword(request.getPassword());
-        user.setRoles(request.getRoles().stream()
-                .map(roleService::createRole)
-                .collect(Collectors.toSet()));
-
+        User user = userMapper.toEntity(request, roleService);
         return userMapper.toResponse(userService.updateUser(id, user));
     }
 

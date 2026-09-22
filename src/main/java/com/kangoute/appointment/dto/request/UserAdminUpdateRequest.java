@@ -20,7 +20,6 @@ public class UserAdminUpdateRequest {
     @Email
     private String email;
 
-    @NotBlank
     @Size(min = 8)
     private String password;
 
