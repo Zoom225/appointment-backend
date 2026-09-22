@@ -1,5 +1,7 @@
 # Gestion de rendez-vous — Backend Spring Boot
 
+[![Backend CI](https://github.com/Zoom225/appointment-backend/actions/workflows/backend-ci.yml/badge.svg?branch=master)](https://github.com/Zoom225/appointment-backend/actions/workflows/backend-ci.yml)
+
 Backend REST de l'application Full Stack **Gestion de rendez-vous**, développé avec **Java 21 et Spring Boot**.
 
 Cette API assure l'authentification, la sécurité, la gestion des utilisateurs, des rendez-vous, des disponibilités et des notifications. Elle est destinée à être consommée par le frontend Angular de l'application.
@@ -474,6 +476,17 @@ docker compose up --build
 ---
 
 ## Tests
+
+### CI GitHub Actions
+
+Le workflow **Backend CI** s'exécute à chaque push vers `master` et à chaque Pull
+Request vers `master`. Sur Ubuntu avec Java 21 Temurin et le cache Maven, il lance
+successivement `./mvnw clean test` puis `./mvnw clean package -DskipTests`.
+Tout échec des tests ou du build fait échouer la CI.
+
+Les tests utilisent la configuration H2 de `src/test/resources/application.properties`,
+sans activation du profil prod ni secret de production. Un nouveau commit annule
+le run précédent encore en cours pour la même branche ou PR.
 
 Le backend dispose de tests permettant de vérifier différentes couches de l'application.
 
