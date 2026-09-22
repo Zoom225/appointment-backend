@@ -36,7 +36,7 @@ class AuthJwtIntegrationTests {
 
     @Test
     void loginReturnsJwtTokenAndTokenCanAccessProtectedEndpoint() throws Exception {
-        mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).build();
+        mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).apply(org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity()).build();
         ObjectMapper objectMapper = new ObjectMapper();
 
         User user = new User();
@@ -75,7 +75,7 @@ class AuthJwtIntegrationTests {
 
     @Test
     void loginWithWrongPasswordReturnsUnauthorized() throws Exception {
-        mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).build();
+        mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).apply(org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity()).build();
 
         User user = new User();
         user.setFirstName("Jwt");
@@ -102,7 +102,7 @@ class AuthJwtIntegrationTests {
 
     @Test
     void loginWithUnknownUserReturnsUnauthorized() throws Exception {
-        mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).build();
+        mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).apply(org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity()).build();
 
         mockMvc.perform(post("/api/auth/login")
                         .contentType(MediaType.APPLICATION_JSON)

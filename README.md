@@ -266,6 +266,23 @@ Le backend applique notamment les règles suivantes :
 
 ## Configuration
 
+### Origines CORS et JWT
+
+Sans configuration CORS, seules `http://localhost:4200` et `http://127.0.0.1:4200`
+sont autorisées. Pour la production, définir `FRONTEND_URL` (ou `APP_FRONTEND_URL`,
+prioritaire) avec l'origine exacte du frontend, par exemple
+`https://mon-projet.vercel.app`. `CORS_ALLOWED_ORIGINS` permet d'ajouter une liste
+d'origines exactes séparées par des virgules. Ne pas conserver les origines locales
+de `.env.example` en production. Les jokers, notamment `https://*.vercel.app`,
+sont refusés ; chaque origine de preview doit être explicitement configurée.
+
+Définir `JWT_SECRET` en production avec un secret aléatoire d'au moins 32 octets,
+encodé en Base64 ; la valeur de développement par défaut ne doit pas être utilisée.
+`JWT_EXPIRATION` conserve le format de durée ISO-8601, par exemple `PT2H`.
+Un token doit avoir une signature HS256 valide, un sujet non vide et une expiration
+future. Les routes protégées renvoient une erreur JSON `ApiErrorResponse` avec
+le statut 401 sans authentification valide, et 403 en cas de droits insuffisants.
+
 La configuration principale se trouve dans :
 
 ```text
