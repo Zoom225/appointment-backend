@@ -21,14 +21,14 @@ import java.util.Base64;
 public class JwtConfig {
 
     @Bean
-    public JwtEncoder jwtEncoder(@Value("${app.jwt.secret:VGhpcy1kZWZhdWx0LXNlY3JldC1tdXN0LWJlLXN1YnN0aXR1dGVkLWF0LXByb2R1Y3Rpb24=}") String secret) {
+    public JwtEncoder jwtEncoder(@Value("${app.jwt.secret}") String secret) {
         return NimbusJwtEncoder.withSecretKey(
                 new SecretKeySpec(Base64.getDecoder().decode(secret), "HmacSHA256")
         ).algorithm(MacAlgorithm.HS256).build();
     }
 
     @Bean
-    public JwtDecoder jwtDecoder(@Value("${app.jwt.secret:VGhpcy1kZWZhdWx0LXNlY3JldC1tdXN0LWJlLXN1YnN0aXR1dGVkLWF0LXByb2R1Y3Rpb24=}") String secret) {
+    public JwtDecoder jwtDecoder(@Value("${app.jwt.secret}") String secret) {
         NimbusJwtDecoder decoder = NimbusJwtDecoder.withSecretKey(
                 new SecretKeySpec(Base64.getDecoder().decode(secret), "HmacSHA256")
         ).macAlgorithm(MacAlgorithm.HS256).build();
