@@ -91,9 +91,13 @@ class AuthJwtIntegrationTests {
                                   "email": "wrong.password@example.com",
                                   "password": "bad-password"
                                 }
-                                """))
+                """))
                 .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.message").value("Email ou mot de passe incorrect"));
+                .andExpect(jsonPath("$.status").value(401))
+                .andExpect(jsonPath("$.error").value("Unauthorized"))
+                .andExpect(jsonPath("$.message").value("Email ou mot de passe incorrect"))
+                .andExpect(jsonPath("$.path").value("/api/auth/login"))
+                .andExpect(jsonPath("$.timestamp").isNotEmpty());
     }
 
     @Test
@@ -107,8 +111,12 @@ class AuthJwtIntegrationTests {
                                   "email": "missing.user@example.com",
                                   "password": "secret123"
                                 }
-                                """))
+                """))
                 .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.message").value("Email ou mot de passe incorrect"));
+                .andExpect(jsonPath("$.status").value(401))
+                .andExpect(jsonPath("$.error").value("Unauthorized"))
+                .andExpect(jsonPath("$.message").value("Email ou mot de passe incorrect"))
+                .andExpect(jsonPath("$.path").value("/api/auth/login"))
+                .andExpect(jsonPath("$.timestamp").isNotEmpty());
     }
 }

@@ -1,5 +1,7 @@
 package com.kangoute.appointment.exception;
 
+import com.kangoute.appointment.dto.response.ApiErrorResponse;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -19,78 +21,83 @@ import java.util.Map;
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<Map<String, String>> handleNotFound(ResourceNotFoundException ex) {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                .body(Map.of("message", ex.getMessage()));
+    public ResponseEntity<ApiErrorResponse> handleNotFound(ResourceNotFoundException ex, HttpServletRequest request) {
+        return buildResponse(HttpStatus.NOT_FOUND, ex.getMessage(), request);
     }
 
     @ExceptionHandler(DuplicateResourceException.class)
-    public ResponseEntity<Map<String, String>> handleDuplicate(DuplicateResourceException ex) {
-        return ResponseEntity.status(HttpStatus.CONFLICT)
-                .body(Map.of("message", ex.getMessage()));
+    public ResponseEntity<ApiErrorResponse> handleDuplicate(DuplicateResourceException ex, HttpServletRequest request) {
+        return buildResponse(HttpStatus.CONFLICT, ex.getMessage(), request);
     }
 
     @ExceptionHandler(InvalidAppointmentTimeException.class)
-    public ResponseEntity<Map<String, String>> handleInvalidAppointmentTime(InvalidAppointmentTimeException ex) {
-        return ResponseEntity.badRequest()
-                .body(Map.of("message", ex.getMessage()));
+    public ResponseEntity<ApiErrorResponse> handleInvalidAppointmentTime(InvalidAppointmentTimeException ex, HttpServletRequest request) {
+        return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
     }
 
     @ExceptionHandler(AppointmentConflictException.class)
-    public ResponseEntity<Map<String, String>> handleAppointmentConflict(AppointmentConflictException ex) {
-        return ResponseEntity.status(HttpStatus.CONFLICT)
-                .body(Map.of("message", ex.getMessage()));
+    public ResponseEntity<ApiErrorResponse> handleAppointmentConflict(AppointmentConflictException ex, HttpServletRequest request) {
+        return buildResponse(HttpStatus.CONFLICT, ex.getMessage(), request);
     }
 
     @ExceptionHandler(AppointmentOutsideAvailabilityException.class)
-    public ResponseEntity<Map<String, String>> handleAppointmentOutsideAvailability(AppointmentOutsideAvailabilityException ex) {
-        return ResponseEntity.badRequest()
-                .body(Map.of("message", ex.getMessage()));
+    public ResponseEntity<ApiErrorResponse> handleAppointmentOutsideAvailability(AppointmentOutsideAvailabilityException ex, HttpServletRequest request) {
+        return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
     }
 
     @ExceptionHandler(InvalidStatisticsPeriodException.class)
-    public ResponseEntity<Map<String, String>> handleInvalidStatisticsPeriod(InvalidStatisticsPeriodException ex) {
-        return ResponseEntity.badRequest()
-                .body(Map.of("message", ex.getMessage()));
+    public ResponseEntity<ApiErrorResponse> handleInvalidStatisticsPeriod(InvalidStatisticsPeriodException ex, HttpServletRequest request) {
+        return buildResponse(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
     }
 
     @ExceptionHandler(AccessDeniedException.class)
-    public ResponseEntity<Map<String, String>> handleAccessDenied(AccessDeniedException ex) {
-        return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                .body(Map.of("message", ex.getMessage()));
+    public ResponseEntity<ApiErrorResponse> handleAccessDenied(AccessDeniedException ex, HttpServletRequest request) {
+        return buildResponse(HttpStatus.FORBIDDEN, ex.getMessage(), request);
     }
 
     @ExceptionHandler(AuthenticationException.class)
-    public ResponseEntity<Map<String, String>> handleAuthentication(AuthenticationException ex) {
+    public ResponseEntity<ApiErrorResponse> handleAuthentication(AuthenticationException ex, HttpServletRequest request) {
         log.warn("Authentication failed: {}", ex.getClass().getSimpleName());
-        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
-                .body(Map.of("message", "Email ou mot de passe incorrect"));
+        return buildResponse(HttpStatus.UNAUTHORIZED, "Email ou mot de passe incorrect", request);
     }
 
     @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
-    public ResponseEntity<Map<String, String>> handleMethodNotSupported(HttpRequestMethodNotSupportedException ex) {
-        return ResponseEntity.status(HttpStatus.METHOD_NOT_ALLOWED)
-                .body(Map.of("message", "Methode HTTP non autorisee"));
+    public ResponseEntity<ApiErrorResponse> handleMethodNotSupported(HttpRequestMethodNotSupportedException ex, HttpServletRequest request) {
+        return buildResponse(HttpStatus.METHOD_NOT_ALLOWED, "Methode HTTP non autorisee", request);
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
-    public ResponseEntity<Map<String, String>> handleMessageNotReadable(HttpMessageNotReadableException ex) {
-        return ResponseEntity.badRequest()
-                .body(Map.of("message", "Requete JSON invalide"));
+    public ResponseEntity<ApiErrorResponse> handleMessageNotReadable(HttpMessageNotReadableException ex, HttpServletRequest request) {
+        return buildResponse(HttpStatus.BAD_REQUEST, "Requete JSON invalide", request);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String, String>> handleValidation(MethodArgumentNotValidException ex) {
+    public ResponseEntity<ApiErrorResponse> handleValidation(MethodArgumentNotValidException ex, HttpServletRequest request) {
         Map<String, String> errors = new HashMap<>();
         ex.getBindingResult().getFieldErrors()
                 .forEach(error -> errors.put(error.getField(), error.getDefaultMessage()));
-        return ResponseEntity.badRequest().body(errors);
+        return buildResponse(HttpStatus.BAD_REQUEST, "Erreur de validation", request, errors);
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<Map<String, String>> handleUnexpected(Exception ex) {
+    public ResponseEntity<ApiErrorResponse> handleUnexpected(Exception ex, HttpServletRequest request) {
         log.error("Unhandled application error", ex);
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body(Map.of("message", "Erreur serveur inattendue"));
+        return buildResponse(HttpStatus.INTERNAL_SERVER_ERROR, "Erreur serveur inattendue", request);
+    }
+
+    private ResponseEntity<ApiErrorResponse> buildResponse(HttpStatus status, String message, HttpServletRequest request) {
+        return buildResponse(status, message, request, null);
+    }
+
+    private ResponseEntity<ApiErrorResponse> buildResponse(HttpStatus status, String message, HttpServletRequest request, Map<String, String> validationErrors) {
+        ApiErrorResponse response = new ApiErrorResponse(
+                java.time.LocalDateTime.now(),
+                status.value(),
+                status.getReasonPhrase(),
+                message,
+                request.getRequestURI(),
+                validationErrors
+        );
+        return ResponseEntity.status(status).body(response);
     }
 }
