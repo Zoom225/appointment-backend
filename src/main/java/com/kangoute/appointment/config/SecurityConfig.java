@@ -112,10 +112,6 @@ public class SecurityConfig {
             }
         }
 
-        if (allowedOrigins.isEmpty()) {
-            allowedOrigins.add("http://localhost:4200");
-            allowedOrigins.add("http://127.0.0.1:4200");
-        }
         if (allowedOrigins.stream().anyMatch(origin -> origin.contains("*"))) {
             throw new IllegalArgumentException("CORS origins must be explicit URLs without wildcards");
         }

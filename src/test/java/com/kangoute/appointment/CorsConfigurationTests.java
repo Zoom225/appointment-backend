@@ -17,9 +17,10 @@ class CorsConfigurationTests {
     }
 
     @Test
-    void defaultsAllowOnlyLocalDevelopmentOrigins() {
+    void missingConfigurationDoesNotImplicitlyAllowAnyOrigin() {
         CorsConfiguration cors = configuration(new CorsProperties());
-        assertEquals(List.of("http://localhost:4200", "http://127.0.0.1:4200"), cors.getAllowedOrigins());
+        assertEquals(List.of(), cors.getAllowedOrigins());
+        assertNull(cors.checkOrigin("http://localhost:4200"));
         assertNull(cors.checkOrigin("https://arbitrary.vercel.app"));
         assertNull(cors.checkOrigin("http://localhost:4300"));
         assertEquals(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"), cors.getAllowedMethods());

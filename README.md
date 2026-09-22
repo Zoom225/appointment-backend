@@ -264,48 +264,86 @@ Le backend applique notamment les règles suivantes :
 
 ---
 
-## Configuration
+## Configuration des environnements
 
-### Origines CORS et JWT
+La configuration est séparée en trois fichiers :
 
-Sans configuration CORS, seules `http://localhost:4200` et `http://127.0.0.1:4200`
-sont autorisées. Pour la production, définir `FRONTEND_URL` (ou `APP_FRONTEND_URL`,
-prioritaire) avec l'origine exacte du frontend, par exemple
-`https://mon-projet.vercel.app`. `CORS_ALLOWED_ORIGINS` permet d'ajouter une liste
-d'origines exactes séparées par des virgules. Ne pas conserver les origines locales
-de `.env.example` en production. Les jokers, notamment `https://*.vercel.app`,
-sont refusés ; chaque origine de preview doit être explicitement configurée.
+- `application.properties` : propriétés communes (port, Swagger, expiration JWT, disponibilité et notifications).
+- `application-dev.properties` : H2 en mémoire par défaut, `ddl-auto=update`, origines locales et clé JWT publique réservée au développement.
+- `application-prod.properties` : PostgreSQL et secret JWT fournis exclusivement au runtime.
 
-Définir `JWT_SECRET` en production avec un secret aléatoire d'au moins 32 octets,
-encodé en Base64 ; la valeur de développement par défaut ne doit pas être utilisée.
-`JWT_EXPIRATION` conserve le format de durée ISO-8601, par exemple `PT2H`.
-Un token doit avoir une signature HS256 valide, un sujet non vide et une expiration
-future. Les routes protégées renvoient une erreur JSON `ApiErrorResponse` avec
-le statut 401 sans authentification valide, et 403 en cas de droits insuffisants.
+Aucun profil n'est activé par défaut dans l'application. Choisir explicitement `dev`
+ou `prod` ; ne jamais les activer ensemble. Sans profil et sans configuration JWT,
+le démarrage échoue.
 
-La configuration principale se trouve dans :
+### Développement local
 
-```text
-src/main/resources/application.properties
+Sous PowerShell :
+
+```powershell
+$env:SPRING_PROFILES_ACTIVE = "dev"
+.\mvnw.cmd spring-boot:run
 ```
 
-Les informations sensibles sont fournies au moyen de variables d'environnement.
-
-Exemple :
+Sous Linux/macOS :
 
 ```bash
-PORT=8081
-SPRING_DATASOURCE_URL=jdbc:postgresql://localhost:5432/appointment
-SPRING_DATASOURCE_USERNAME=postgres
-SPRING_DATASOURCE_PASSWORD=postgres
-CORS_ALLOWED_ORIGINS=http://localhost:4200
-JWT_SECRET=change-this-secret
-JWT_EXPIRATION=PT2H
-APP_DEMO_ENABLED=false
-APP_FRONTEND_URL=http://localhost:4200
+SPRING_PROFILES_ACTIVE=dev ./mvnw spring-boot:run
 ```
 
-> Les véritables secrets de production ne doivent jamais être enregistrés dans Git.
+Aucune base externe ni aucun secret n'est nécessaire pour ce lancement local.
+H2 utilise une base en mémoire, perdue à l'arrêt. Les seules origines CORS du profil
+dev sont `http://localhost:4200` et `http://127.0.0.1:4200`.
+Les variables datasource permettent d'utiliser une base locale différente si souhaité.
+
+`.env.example` est un modèle documentaire : Spring Boot ne charge pas automatiquement
+les fichiers `.env`. Renseigner les variables dans le terminal, la configuration de
+l'IDE ou le service d'hébergement. Laisser les variables optionnelles inutilisées
+**non définies**, plutôt que les exporter avec une valeur vide : une valeur vide
+remplace la valeur par défaut.
+
+### Production sur Render
+
+Définir dans les variables d'environnement du service Render :
+
+| Variable | Valeur attendue |
+|---|---|
+| `SPRING_PROFILES_ACTIVE` | `prod` |
+| `SPRING_DATASOURCE_URL` | URL JDBC PostgreSQL, par exemple `jdbc:postgresql://<host>:5432/<database>?sslmode=require` |
+| `SPRING_DATASOURCE_USERNAME` | Utilisateur PostgreSQL, obligatoire |
+| `SPRING_DATASOURCE_PASSWORD` | Mot de passe PostgreSQL, obligatoire |
+| `JWT_SECRET` | Secret Base64 aléatoire d'au moins **32 octets avant encodage**, obligatoire |
+| `JWT_EXPIRATION` | `PT2H` par défaut ; durée ISO-8601 |
+| `APP_FRONTEND_URL` ou `FRONTEND_URL` | Origine exacte du frontend, par exemple `https://mon-projet.vercel.app` |
+| `CORS_ALLOWED_ORIGINS` | Facultatif : origines supplémentaires exactes, séparées par des virgules |
+| `APP_DEMO_ENABLED` | `false` par défaut |
+| `PORT` | Fourni par l'hébergeur, `8081` par défaut |
+
+`APP_FRONTEND_URL` est prioritaire ; laisser la variable frontend inutilisée non
+définie. Ne pas utiliser de chemin ni de slash final dans les origines. Aucun
+localhost ni wildcard Vercel n'est ajouté en production. Sans origine configurée,
+les requêtes cross-origin des navigateurs sont refusées.
+
+Le démarrage prod échoue avant l'initialisation de la base si une variable datasource
+ou `JWT_SECRET` est absente ou vide, si l'URL n'est pas PostgreSQL, ou si le secret
+n'est pas un Base64 d'au moins 32 octets. Les messages de validation nomment la
+variable sans afficher sa valeur. Ne jamais réutiliser la clé publique du profil dev.
+
+Générer le secret dans un environnement de confiance (par exemple avec
+`openssl rand -base64 32`) et le renseigner directement dans les variables sécurisées
+de Render. Ne jamais enregistrer de véritable secret, mot de passe ou token dans Git.
+Si la démo est volontairement activée en production, définir aussi `APP_DEMO_PASSWORD` ;
+le mot de passe de démonstration local n'est pas utilisé en prod.
+
+### JPA, Flyway et tests
+
+Les profils dev et prod conservent explicitement `ddl-auto=update`, Flyway activé et
+`baseline-on-migrate=true`. Le passage à `ddl-auto=validate` et la migration complète
+du schéma seront traités séparément. Aucune migration SQL n'est ajoutée ici.
+
+Les tests utilisent `src/test/resources/application.properties`, avec H2,
+`ddl-auto=create-drop` et une clé JWT publique propre aux tests. Aucun profil dev/prod
+ni aucune variable de production n'est nécessaire pour lancer `mvnw.cmd clean test`.
 
 ---
 
@@ -347,7 +385,7 @@ Compte de démonstration :
 
 ```text
 Email : demo@gestion-rendez-vous.com
-Mot de passe : Demo2026!
+Mot de passe local (dev uniquement) : Demo2026!
 Rôle : ROLE_USER
 ```
 
@@ -392,13 +430,13 @@ Sous Linux/macOS :
 Sous Windows :
 
 ```bash
-mvnw.cmd spring-boot:run
+mvnw.cmd "-Dspring-boot.run.profiles=dev" spring-boot:run
 ```
 
 Sous Linux/macOS :
 
 ```bash
-./mvnw spring-boot:run
+SPRING_PROFILES_ACTIVE=dev ./mvnw spring-boot:run
 ```
 
 Par défaut :
@@ -423,7 +461,11 @@ Construire l'image :
 docker build -t appointment-backend .
 ```
 
-Démarrer avec Docker Compose :
+Le Dockerfile ne contient aucun secret ni profil actif. Fournir le profil et les
+variables de production au runtime (Render ou `docker run --env-file <fichier-prive>`).
+Ne jamais ajouter de secret via `ARG`, `ENV` ou `COPY` dans l'image.
+
+Démarrer en développement avec Docker Compose (profil `dev` explicite) :
 
 ```bash
 docker compose up --build
@@ -462,17 +504,7 @@ mvnw.cmd test
 
 Le backend est actuellement déployé sur **Render**.
 
-Les principales variables nécessaires en production sont :
-
-```text
-PORT
-SPRING_DATASOURCE_URL
-SPRING_DATASOURCE_USERNAME
-SPRING_DATASOURCE_PASSWORD
-JWT_SECRET
-CORS_ALLOWED_ORIGINS
-APP_FRONTEND_URL
-```
+Configurer les variables décrites dans [Configuration des environnements](#configuration-des-environnements), notamment `SPRING_PROFILES_ACTIVE=prod`.
 
 Le frontend Angular déployé sur Vercel communique avec cette API en HTTPS.
 
@@ -515,7 +547,7 @@ GUIDE_FRONTEND.md
 ```bash
 ./mvnw test
 ./mvnw -DskipTests compile
-./mvnw spring-boot:run
+SPRING_PROFILES_ACTIVE=dev ./mvnw spring-boot:run
 docker compose up --build
 ```
 
