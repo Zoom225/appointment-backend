@@ -116,6 +116,24 @@ verrous sur une base PostgreSQL de préproduction ; aucune connexion Neon/Render
 n'a été utilisée. Les éventuelles incohérences historiques restent à examiner
 manuellement. Le jeu démo neuf contient un seul rendez-vous actif futur.
 
+## Validation PostgreSQL
+
+Les tests `PostgreSqlMigrationIntegrationTests` et `PostgreSqlBookingIntegrationTests`
+utilisent Testcontainers avec l'image `postgres:17-alpine`. Ils démarrent une base
+locale éphémère, sans connexion à Neon ni identifiants de production. Le premier
+rejoue Flyway sur une table historique et vérifie la conservation de sa ligne, la
+version V3, `appointment_booking_lock`, `created_at` et `updated_at`. Le second
+vérifie `SELECT ... FOR UPDATE` jusqu'au commit ou rollback, les réservations
+concurrentes d'un même créneau et d'un même utilisateur, les statuts et les
+horodatages. Les tests H2 existants restent indépendants.
+
+Docker Desktop doit être démarré avec le moteur Linux pour exécuter ces tests.
+Si Docker est absent, Testcontainers les marque explicitement comme ignorés ;
+un build Maven vert dans ce cas ne valide pas PostgreSQL.
+La validation locale a été exécutée sur PostgreSQL 17 avec Docker Desktop :
+les tests PostgreSQL ont vérifié la migration V3, les colonnes d'audit, le verrou
+jusqu'au commit et au rollback, les deux courses de réservation et les statuts.
+
 ## Fichiers concernés par cette évolution
 
 ### Créés
