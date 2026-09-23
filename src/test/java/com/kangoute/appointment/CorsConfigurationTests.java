@@ -43,4 +43,16 @@ class CorsConfigurationTests {
         properties.setAllowedOrigins(List.of("https://*.vercel.app"));
         assertThrows(IllegalArgumentException.class, () -> configuration(properties));
     }
+
+    @Test
+    void configuredOriginsAreTrimmedDeduplicatedAndEmptyValuesIgnored() {
+        CorsProperties properties = new CorsProperties();
+        properties.setFrontendUrl(" https://appointment-front-gilt.vercel.app ");
+        properties.setAllowedOrigins(List.of("  ", "https://appointment-front-gilt.vercel.app",
+                " https://gestion-de-rendez-vous-77exox4z0-kangoute.vercel.app "));
+
+        CorsConfiguration cors = configuration(properties);
+        assertEquals(List.of("https://appointment-front-gilt.vercel.app",
+                "https://gestion-de-rendez-vous-77exox4z0-kangoute.vercel.app"), cors.getAllowedOrigins());
+    }
 }
