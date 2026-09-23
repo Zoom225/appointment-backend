@@ -27,7 +27,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@SpringBootTest(properties = {"app.cors.frontend-url=https://appointment-front-gilt.vercel.app", "app.cors.allowed-origins=http://localhost:4200,http://127.0.0.1:4200"})
+@SpringBootTest(properties = {"app.cors.frontend-url=https://appointment-front-gilt.vercel.app", "app.cors.allowed-origins=http://localhost:4200,http://127.0.0.1:4200,https://gestion-de-rendez-vous-77exox4z0-kangoute.vercel.app"})
 @Transactional
 @DirtiesContext(classMode = DirtiesContext.ClassMode.AFTER_CLASS)
 class CorsIntegrationTests {
@@ -39,8 +39,9 @@ class CorsIntegrationTests {
 
     private static final String LOGIN_ORIGIN = "http://localhost:4200";
     private static final String VERCEL_ORIGIN = "https://appointment-front-gilt.vercel.app";
+    private static final String SECOND_VERCEL_ORIGIN = "https://gestion-de-rendez-vous-77exox4z0-kangoute.vercel.app";
     private static final String VERCEL_PREVIEW_ORIGIN = "https://appointment-front-preview-123.vercel.app";
-    private static final String UNAUTHORIZED_ORIGIN = "https://malicious-example.invalid";
+    private static final String UNAUTHORIZED_ORIGIN = "https://evil.example.com";
 
     @Autowired
     private UserService userService;
@@ -109,6 +110,17 @@ class CorsIntegrationTests {
                         .header(HttpHeaders.ACCESS_CONTROL_REQUEST_HEADERS, "Authorization,Content-Type,Accept"))
                 .andExpect(status().isOk())
                 .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, VERCEL_ORIGIN))
+                .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_METHODS, containsString("POST")));
+    }
+
+    @Test
+    void preflightFromSecondConfiguredVercelOriginIsAccepted() throws Exception {
+        mockMvc.perform(options("/api/auth/login")
+                        .header(HttpHeaders.ORIGIN, SECOND_VERCEL_ORIGIN)
+                        .header(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "POST")
+                        .header(HttpHeaders.ACCESS_CONTROL_REQUEST_HEADERS, "Authorization,Content-Type,Accept"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, SECOND_VERCEL_ORIGIN))
                 .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_METHODS, containsString("POST")));
     }
 

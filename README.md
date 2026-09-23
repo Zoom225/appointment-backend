@@ -332,6 +332,16 @@ définie. Ne pas utiliser de chemin ni de slash final dans les origines. Aucun
 localhost ni wildcard Vercel n'est ajouté en production. Sans origine configurée,
 les requêtes cross-origin des navigateurs sont refusées.
 
+Pour les deux frontends Vercel actuellement utilisés, définir sur Render :
+
+```text
+APP_FRONTEND_URL=https://appointment-front-gilt.vercel.app
+CORS_ALLOWED_ORIGINS=https://appointment-front-gilt.vercel.app,https://gestion-de-rendez-vous-77exox4z0-kangoute.vercel.app
+```
+
+Les origines doivent être exactes, sans wildcard ni slash final. Séparer plusieurs
+origines par des virgules. La duplication de l'origine principale est ignorée.
+
 Le démarrage prod échoue avant l'initialisation de la base si une variable datasource
 ou `JWT_SECRET` est absente ou vide, si l'URL n'est pas PostgreSQL, ou si le secret
 n'est pas un Base64 d'au moins 32 octets. Les messages de validation nomment la

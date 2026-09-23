@@ -102,19 +102,20 @@ public class SecurityConfig {
 
     private List<String> resolveAllowedOrigins(CorsProperties corsProperties) {
         Set<String> allowedOrigins = new LinkedHashSet<>();
-        allowedOrigins.addAll(corsProperties.getAllowedOrigins());
-
-        String configuredFrontendUrl = corsProperties.getFrontendUrl();
-        if (configuredFrontendUrl != null) {
-            String normalizedFrontendUrl = configuredFrontendUrl.trim();
-            if (!normalizedFrontendUrl.isEmpty()) {
-                allowedOrigins.add(normalizedFrontendUrl);
-            }
+        if (corsProperties.getAllowedOrigins() != null) {
+            corsProperties.getAllowedOrigins().forEach(origin -> addAllowedOrigin(allowedOrigins, origin));
         }
+        addAllowedOrigin(allowedOrigins, corsProperties.getFrontendUrl());
 
-        if (allowedOrigins.stream().anyMatch(origin -> origin.contains("*"))) {
+        return List.copyOf(allowedOrigins);
+    }
+
+    private void addAllowedOrigin(Set<String> allowedOrigins, String origin) {
+        if (origin == null || origin.isBlank()) return;
+        String normalized = origin.trim();
+        if (normalized.contains("*")) {
             throw new IllegalArgumentException("CORS origins must be explicit URLs without wildcards");
         }
-        return List.copyOf(allowedOrigins);
+        allowedOrigins.add(normalized);
     }
 }
