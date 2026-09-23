@@ -13,6 +13,14 @@ public class AppointmentResponse {
     private AppointmentStatus status;
     private Long userId;
 
+    private LocalDateTime createdAt;
+    private LocalDateTime updatedAt;
+
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+    public LocalDateTime getUpdatedAt() { return updatedAt; }
+    public void setUpdatedAt(LocalDateTime updatedAt) { this.updatedAt = updatedAt; }
+
     public Long getId() {
         return id;
     }

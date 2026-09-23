@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.time.LocalDateTime;
 
 @Service
@@ -21,10 +22,11 @@ public class AdminStatisticsServiceImpl implements AdminStatisticsService {
 
     private final UserRepository userRepository;
     private final AppointmentRepository appointmentRepository;
+    private final Clock clock;
 
     @Override
     public AdminStatisticsResponse getStatistics(LocalDateTime periodFrom, LocalDateTime periodTo) {
-        LocalDateTime now = LocalDateTime.now();
+        LocalDateTime now = LocalDateTime.now(clock);
         LocalDateTime activeSince = now.minusDays(ACTIVE_WINDOW_DAYS);
         LocalDateTime effectiveTo = periodTo != null ? periodTo : now;
         LocalDateTime effectiveFrom = periodFrom != null ? periodFrom : effectiveTo.minusDays(ACTIVE_WINDOW_DAYS);
@@ -37,6 +39,10 @@ public class AdminStatisticsServiceImpl implements AdminStatisticsService {
                 .totalUsers(userRepository.count())
                 .activeUsersLast30Days(appointmentRepository.countDistinctUsersWithAppointmentsBetween(activeSince, now))
                 .totalAppointments(appointmentRepository.count())
+                .todayAppointments(appointmentRepository.countByStartDateTimeGreaterThanEqualAndStartDateTimeLessThan(
+                        now.toLocalDate().atStartOfDay(), now.toLocalDate().plusDays(1).atStartOfDay()))
+                .upcomingAppointments(appointmentRepository.countByStatusInAndStartDateTimeAfter(AppointmentStatus.activeStatuses(), now))
+                .completedAppointments(appointmentRepository.countByStatus(AppointmentStatus.COMPLETED))
                 .appointmentsInPeriod(appointmentRepository.countAppointmentsBetween(effectiveFrom, effectiveTo))
                 .pendingAppointments(
                         appointmentRepository.countByStatus(AppointmentStatus.PENDING)

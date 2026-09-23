@@ -29,6 +29,9 @@ class PaginationAndFilterIntegrationTests {
     private UserService userService;
 
     @Autowired
+    private com.kangoute.appointment.repository.AppointmentRepository appointmentRepository;
+
+    @Autowired
     private AppointmentService appointmentService;
 
     @Autowired
@@ -68,16 +71,16 @@ class PaginationAndFilterIntegrationTests {
     @Test
     void appointmentsCanBePaginatedAndFilteredByStatusAndDateRange() {
         User user = createUser("appointments", "Owner", "owner.appointments@example.com");
-        LocalDate date = LocalDate.of(2026, 8, 10);
+        LocalDate date = AppointmentTestDates.nextWorkingDate();
 
-        Appointment first = appointmentService.createAppointment(Appointment.builder()
+        Appointment first = appointmentRepository.save(Appointment.builder().status(AppointmentStatus.PENDING)
                 .user(user)
                 .startDateTime(date.atTime(9, 0))
                 .endDateTime(date.atTime(9, 30))
                 .reason("First")
                 .build());
 
-        Appointment second = appointmentService.createAppointment(Appointment.builder()
+        Appointment second = appointmentRepository.save(Appointment.builder().status(AppointmentStatus.PENDING)
                 .user(user)
                 .startDateTime(date.atTime(10, 0))
                 .endDateTime(date.atTime(10, 30))

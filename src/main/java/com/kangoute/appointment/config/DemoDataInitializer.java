@@ -8,6 +8,7 @@ import com.kangoute.appointment.repository.AppointmentRepository;
 import com.kangoute.appointment.repository.UserRepository;
 import com.kangoute.appointment.service.RoleService;
 import com.kangoute.appointment.service.UserService;
+import com.kangoute.appointment.service.AppointmentAvailabilityService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
@@ -32,10 +33,12 @@ public class DemoDataInitializer implements ApplicationRunner {
     private final UserService userService;
     private final RoleService roleService;
     private final PasswordEncoder passwordEncoder;
+    private final AppointmentAvailabilityService availabilityService;
 
     @Override
     @Transactional
     public void run(ApplicationArguments args) {
+        appointmentRepository.lockBookingCalendar();
         User demoUser = userRepository.findByEmail(demoProperties.getEmail())
                 .map(this::synchronizeDemoUser)
                 .orElseGet(this::createDemoUser);
@@ -84,14 +87,22 @@ public class DemoDataInitializer implements ApplicationRunner {
 
     private List<Appointment> buildDemoAppointments(User demoUser) {
         LocalDateTime base = LocalDateTime.now().withSecond(0).withNano(0);
+        var date = base.toLocalDate().plusDays(1);
+        var slots = availabilityService.getAvailableSlots(demoUser.getId(), date);
+        while (slots.isEmpty() && date.isBefore(base.toLocalDate().plusYears(1))) {
+            date = date.plusDays(1);
+            slots = availabilityService.getAvailableSlots(demoUser.getId(), date);
+        }
+        if (slots.isEmpty()) throw new IllegalStateException("No available slot for demo appointment");
+        var futureSlot = slots.getFirst();
 
         return List.of(
-                buildAppointment(demoUser, base.plusDays(2).withHour(10).withMinute(0),
-                        base.plusDays(2).withHour(10).withMinute(30),
+                buildAppointment(demoUser, base.minusDays(4).withHour(10).withMinute(0),
+                        base.minusDays(4).withHour(10).withMinute(30),
                         "Consultation de demonstration",
                         AppointmentStatus.SCHEDULED),
-                buildAppointment(demoUser, base.plusDays(3).withHour(11).withMinute(0),
-                        base.plusDays(3).withHour(11).withMinute(30),
+                buildAppointment(demoUser, futureSlot.getStartDateTime(),
+                        futureSlot.getEndDateTime(),
                         "Reunion de suivi",
                         AppointmentStatus.CONFIRMED),
                 buildAppointment(demoUser, base.minusDays(2).withHour(12).withMinute(0),
@@ -102,8 +113,8 @@ public class DemoDataInitializer implements ApplicationRunner {
                         base.minusDays(3).withHour(13).withMinute(30),
                         "Rendez-vous annule",
                         AppointmentStatus.CANCELLED),
-                buildAppointment(demoUser, base.plusDays(4).withHour(14).withMinute(0),
-                        base.plusDays(4).withHour(14).withMinute(30),
+                buildAppointment(demoUser, base.minusDays(5).withHour(14).withMinute(0),
+                        base.minusDays(5).withHour(14).withMinute(30),
                         "Nouveau rendez-vous",
                         AppointmentStatus.PENDING)
         );

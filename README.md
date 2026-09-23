@@ -256,13 +256,19 @@ La liste complète et les contrats des endpoints sont disponibles dans Swagger :
 
 Le backend applique notamment les règles suivantes :
 
-- un utilisateur ne peut pas avoir deux rendez-vous qui se chevauchent ;
+- un utilisateur ne peut pas avoir plusieurs rendez-vous actifs futurs ;
+- aucun créneau occupé ne peut être réservé par un autre utilisateur ;
 - la date de début doit être strictement antérieure à la date de fin ;
 - les créneaux doivent respecter les disponibilités autorisées ;
 - un rendez-vous reçoit un statut lors de sa création ;
 - les modifications passent par la couche métier ;
 - les données sensibles ne sont pas exposées directement à travers les entités JPA ;
 - les erreurs métier sont converties en réponses HTTP adaptées.
+
+Le workflow conserve la validation ADMIN : `PENDING → CONFIRMED → COMPLETED`,
+avec annulation possible tant que le rendez-vous est actif. L'identité de réservation
+vient du JWT. Les détails des endpoints, transitions, notifications et verrous sont
+documentés dans [Réservation et gestion des rendez-vous](docs/appointment-booking.md).
 
 ---
 
@@ -341,7 +347,8 @@ le mot de passe de démonstration local n'est pas utilisé en prod.
 
 Les profils dev et prod conservent explicitement `ddl-auto=update`, Flyway activé et
 `baseline-on-migrate=true`. Le passage à `ddl-auto=validate` et la migration complète
-du schéma seront traités séparément. Aucune migration SQL n'est ajoutée ici.
+du schéma seront traités séparément. La migration V3 ajoute le verrou de réservation
+et les dates d'audit du rendez-vous, sans supprimer de données existantes.
 
 Les tests utilisent `src/test/resources/application.properties`, avec H2,
 `ddl-auto=create-drop` et une clé JWT publique propre aux tests. Aucun profil dev/prod

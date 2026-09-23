@@ -5,10 +5,27 @@ import com.kangoute.appointment.enums.AppointmentStatus;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.time.LocalDateTime;
+import java.util.Locale;
 
 public final class AppointmentSpecifications {
 
     private AppointmentSpecifications() {
+    }
+
+    public static Specification<Appointment> matchesUser(String query) {
+        return (root, cq, cb) -> {
+            if (query == null || query.isBlank()) return cb.conjunction();
+            String pattern = "%" + query.trim().toLowerCase(Locale.ROOT)
+                    .replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%";
+            return cb.or(cb.like(cb.lower(root.get("user").get("email")), pattern, '\\'),
+                    cb.like(cb.lower(root.get("user").get("firstName")), pattern, '\\'),
+                    cb.like(cb.lower(root.get("user").get("lastName")), pattern, '\\'));
+        };
+    }
+
+    public static Specification<Appointment> upcoming(LocalDateTime now) {
+        return (root, cq, cb) -> cb.and(root.get("status").in(AppointmentStatus.activeStatuses()),
+                cb.greaterThan(root.get("startDateTime"), now));
     }
 
     public static Specification<Appointment> hasUserId(Long userId) {

@@ -38,6 +38,9 @@ class AdminStatisticsIntegrationTests {
     private AppointmentService appointmentService;
 
     @Autowired
+    private com.kangoute.appointment.repository.AppointmentRepository appointmentRepository;
+
+    @Autowired
     private AdminStatisticsController adminStatisticsController;
 
     @AfterEach
@@ -53,22 +56,23 @@ class AdminStatisticsIntegrationTests {
 
         LocalDate date = recentWorkingDate();
 
-        Appointment appointmentA = appointmentService.createAppointment(Appointment.builder()
+        Appointment appointmentA = appointmentRepository.save(Appointment.builder().status(AppointmentStatus.PENDING)
                 .user(userA)
                 .startDateTime(date.atTime(10, 0))
                 .endDateTime(date.atTime(10, 30))
                 .reason("A")
                 .build());
-        appointmentService.updateStatus(appointmentA.getId(), AppointmentStatus.CONFIRMED);
+        appointmentA.setStatus(AppointmentStatus.CONFIRMED);
+        appointmentRepository.saveAndFlush(appointmentA);
 
-        appointmentService.createAppointment(Appointment.builder()
+        appointmentRepository.save(Appointment.builder().status(AppointmentStatus.PENDING)
                 .user(userA)
                 .startDateTime(date.atTime(11, 0))
                 .endDateTime(date.atTime(11, 30))
                 .reason("B")
                 .build());
 
-        Appointment appointmentB = appointmentService.createAppointment(Appointment.builder()
+        Appointment appointmentB = appointmentRepository.save(Appointment.builder().status(AppointmentStatus.PENDING)
                 .user(userB)
                 .startDateTime(date.atTime(12, 0))
                 .endDateTime(date.atTime(12, 30))

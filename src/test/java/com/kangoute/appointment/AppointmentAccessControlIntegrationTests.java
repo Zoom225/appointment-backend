@@ -54,8 +54,8 @@ class AppointmentAccessControlIntegrationTests {
         AppointmentCreateRequest request = new AppointmentCreateRequest();
         request.setUserId(other.getId());
         request.setReason("Consultation");
-        request.setStartDateTime(LocalDate.of(2026, 8, 10).atTime(9, 0));
-        request.setEndDateTime(LocalDate.of(2026, 8, 10).atTime(9, 30));
+        request.setStartDateTime(AppointmentTestDates.nextWorkingDate().atTime(9, 0));
+        request.setEndDateTime(AppointmentTestDates.nextWorkingDate().atTime(9, 30));
 
         assertThrows(AccessDeniedException.class, () -> appointmentController.createAppointment(request));
     }
@@ -83,8 +83,8 @@ class AppointmentAccessControlIntegrationTests {
 
         AppointmentUpdateRequest updateRequest = new AppointmentUpdateRequest();
         updateRequest.setReason("Updated");
-        updateRequest.setStartDateTime(LocalDate.of(2026, 8, 10).atTime(10, 0));
-        updateRequest.setEndDateTime(LocalDate.of(2026, 8, 10).atTime(10, 30));
+        updateRequest.setStartDateTime(AppointmentTestDates.nextWorkingDate().atTime(10, 0));
+        updateRequest.setEndDateTime(AppointmentTestDates.nextWorkingDate().atTime(10, 30));
 
         assertThrows(AccessDeniedException.class, () -> appointmentController.updateAppointment(otherAppointment.getId(), updateRequest));
         assertThrows(AccessDeniedException.class, () -> appointmentController.cancelAppointment(otherAppointment.getId()));
@@ -102,8 +102,8 @@ class AppointmentAccessControlIntegrationTests {
     private Appointment createAppointment(User user, String reason) {
         Appointment appointment = Appointment.builder()
                 .user(user)
-                .startDateTime(LocalDate.of(2026, 8, 10).atTime(11, 0))
-                .endDateTime(LocalDate.of(2026, 8, 10).atTime(11, 30))
+                .startDateTime(AppointmentTestDates.nextWorkingDate().atTime(reason.equals("Other") ? 12 : 11, 0))
+                .endDateTime(AppointmentTestDates.nextWorkingDate().atTime(reason.equals("Other") ? 12 : 11, 30))
                 .reason(reason)
                 .build();
         return appointmentService.createAppointment(appointment);

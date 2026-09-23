@@ -16,6 +16,9 @@ public class AdminStatisticsResponse {
     private long totalUsers;
     private long activeUsersLast30Days;
     private long totalAppointments;
+    private long todayAppointments;
+    private long upcomingAppointments;
+    private long completedAppointments;
     private long appointmentsInPeriod;
     private long pendingAppointments;
     private long confirmedAppointments;

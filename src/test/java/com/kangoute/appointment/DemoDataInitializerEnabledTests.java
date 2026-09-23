@@ -87,6 +87,8 @@ class DemoDataInitializerEnabledTests {
 
         List<Appointment> appointments = appointmentRepository.findByUserId(demoUser.getId());
         assertEquals(5, appointments.size());
+        assertEquals(1, appointments.stream().filter(appointment -> appointment.getStatus().isActive()
+                && appointment.getStartDateTime().isAfter(java.time.LocalDateTime.now())).count());
         assertTrue(appointments.stream().allMatch(appointment -> appointment.getUser().getId().equals(demoUser.getId())));
 
         Set<AppointmentStatus> statuses = appointments.stream()

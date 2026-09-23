@@ -6,14 +6,13 @@ import com.kangoute.appointment.dto.request.AppointmentUpdateRequest;
 import com.kangoute.appointment.dto.response.AppointmentAvailabilitySlotResponse;
 import com.kangoute.appointment.dto.response.AppointmentResponse;
 import com.kangoute.appointment.entity.Appointment;
-import com.kangoute.appointment.entity.User;
 import com.kangoute.appointment.enums.AppointmentStatus;
 import com.kangoute.appointment.mapper.AppointmentMapper;
 import com.kangoute.appointment.security.CurrentUserService;
 import com.kangoute.appointment.service.AppointmentAvailabilityService;
 import com.kangoute.appointment.service.AppointmentService;
-import com.kangoute.appointment.service.UserService;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -44,29 +43,21 @@ public class AppointmentController {
 
     private final AppointmentService appointmentService;
     private final AppointmentAvailabilityService appointmentAvailabilityService;
-    private final UserService userService;
     private final AppointmentMapper appointmentMapper;
     private final CurrentUserService currentUserService;
 
     @PostMapping
+    @Operation(summary = "Réserver un rendez-vous en attente de confirmation", description = "L'utilisateur est déterminé par le JWT. Un seul rendez-vous actif futur est autorisé.")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public AppointmentResponse createAppointment(@Valid @RequestBody AppointmentCreateRequest request) {
-        if (!currentUserService.isAdmin() && !currentUserService.isCurrentUser(request.getUserId())) {
-            throw new AccessDeniedException("Vous ne pouvez creer que des rendez-vous pour votre propre compte utilisateur");
-        }
-        User user = userService.getUserById(request.getUserId());
-        Appointment appointment = appointmentMapper.toEntity(request, user);
-        return appointmentMapper.toResponse(appointmentService.createAppointment(appointment));
+        return appointmentMapper.toResponse(appointmentService.bookAppointment(request));
     }
 
     @GetMapping("/{id}")
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public AppointmentResponse getAppointmentById(@PathVariable Long id) {
         Appointment appointment = appointmentService.getAppointmentById(id);
-        if (!currentUserService.isAdmin() && !currentUserService.isCurrentUser(appointment.getUser().getId())) {
-            throw new AccessDeniedException("Vous ne pouvez acceder qu'a vos propres rendez-vous");
-        }
         return appointmentMapper.toResponse(appointment);
     }
 
@@ -76,36 +67,27 @@ public class AppointmentController {
             @PathVariable Long id,
             @Valid @RequestBody AppointmentUpdateRequest request
     ) {
-        Appointment existingAppointment = appointmentService.getAppointmentById(id);
-        if (!currentUserService.isAdmin() && !currentUserService.isCurrentUser(existingAppointment.getUser().getId())) {
-            throw new AccessDeniedException("Vous ne pouvez modifier que vos propres rendez-vous");
-        }
-        appointmentMapper.updateEntity(request, existingAppointment);
-        return appointmentMapper.toResponse(appointmentService.updateAppointment(id, existingAppointment));
+        Appointment changes = new Appointment();
+        appointmentMapper.updateEntity(request, changes);
+        return appointmentMapper.toResponse(appointmentService.updateAppointment(id, changes));
     }
 
     @PatchMapping("/{id}")
+    @Operation(summary = "Changer le statut (ADMIN) ou annuler son rendez-vous (USER)")
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public AppointmentResponse updateAppointmentStatus(
             @PathVariable Long id,
             @Valid @RequestBody AppointmentStatusUpdateRequest request
     ) {
-        Appointment existingAppointment = appointmentService.getAppointmentById(id);
-        if (!currentUserService.isAdmin() && !currentUserService.isCurrentUser(existingAppointment.getUser().getId())) {
-            throw new AccessDeniedException("Vous ne pouvez modifier que vos propres rendez-vous");
-        }
         return appointmentMapper.toResponse(
                 appointmentService.updateStatus(id, request.getStatus())
         );
     }
 
     @PatchMapping("/{id}/cancel")
+    @Operation(summary = "Annuler son rendez-vous actif")
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public AppointmentResponse cancelAppointment(@PathVariable Long id) {
-        Appointment existingAppointment = appointmentService.getAppointmentById(id);
-        if (!currentUserService.isAdmin() && !currentUserService.isCurrentUser(existingAppointment.getUser().getId())) {
-            throw new AccessDeniedException("Vous ne pouvez annuler que vos propres rendez-vous");
-        }
         return appointmentMapper.toResponse(appointmentService.cancelAppointment(id));
     }
 
@@ -132,14 +114,30 @@ public class AppointmentController {
     }
 
     @GetMapping("/availability")
+    @Operation(summary = "Consulter les créneaux futurs disponibles dans le calendrier partagé")
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public java.util.List<AppointmentAvailabilitySlotResponse> getAvailability(
-            @RequestParam Long userId,
+            @RequestParam(required = false) Long userId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date
     ) {
+        if (userId == null) userId = currentUserService.getCurrentUserId();
         if (!currentUserService.isAdmin() && !currentUserService.isCurrentUser(userId)) {
             throw new AccessDeniedException("Vous ne pouvez acceder qu'a vos propres disponibilites");
         }
         return appointmentAvailabilityService.getAvailableSlots(userId, date);
+    }
+
+    @GetMapping("/me/upcoming")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    @Operation(summary = "Mes rendez-vous actifs à venir", description = "Ordre chronologique par défaut ; size=1 donne le prochain rendez-vous.")
+    public Page<AppointmentResponse> getMyUpcomingAppointments(Pageable pageable) {
+        return appointmentService.getMyAppointments(pageable, true).map(appointmentMapper::toResponse);
+    }
+
+    @GetMapping("/me/history")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    @Operation(summary = "Mon historique", description = "Rendez-vous passés, annulés ou terminés, paginés du plus récent au plus ancien.")
+    public Page<AppointmentResponse> getMyHistory(Pageable pageable) {
+        return appointmentService.getMyAppointments(pageable, false).map(appointmentMapper::toResponse);
     }
 }

@@ -21,6 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 
 @Service
@@ -51,7 +52,8 @@ public class AppointmentNotificationServiceImpl implements AppointmentNotificati
                 .appointment(appointment)
                 .recipient(appointment.getUser())
                 .type(type)
-                .title(buildTitle(type))
+                .title(type == AppointmentNotificationType.STATUS_CHANGED && appointment.getStatus() == AppointmentStatus.CONFIRMED
+                        ? "Rendez-vous confirmé" : buildTitle(type))
                 .message(buildMessage(type, appointment, actorEmail))
                 .createdAt(LocalDateTime.now())
                 .build();
@@ -61,6 +63,7 @@ public class AppointmentNotificationServiceImpl implements AppointmentNotificati
 
     @Override
     public void sendDueReminders(LocalDateTime now) {
+        appointmentRepository.lockBookingCalendar();
         LocalDateTime reminderStart = now.plusMinutes(reminderMinutesBefore);
         LocalDateTime reminderEnd = reminderStart.plusMinutes(1);
 
@@ -72,6 +75,7 @@ public class AppointmentNotificationServiceImpl implements AppointmentNotificati
                 );
 
         for (Appointment appointment : appointments) {
+            if (!appointment.getStatus().isActive()) continue;
             notifyAppointmentEvent(appointment, AppointmentNotificationType.REMINDER, "SYSTEM");
             appointment.setReminderSentAt(now);
             appointmentRepository.save(appointment);
@@ -143,7 +147,7 @@ public class AppointmentNotificationServiceImpl implements AppointmentNotificati
 
     private String buildTitle(AppointmentNotificationType type) {
         return switch (type) {
-            case CREATED -> "Rendez-vous cree";
+            case CREATED -> "Demande de rendez-vous enregistrée";
             case UPDATED -> "Rendez-vous modifie";
             case CANCELLED -> "Rendez-vous annule";
             case STATUS_CHANGED -> "Statut du rendez-vous modifie";
@@ -152,11 +156,14 @@ public class AppointmentNotificationServiceImpl implements AppointmentNotificati
     }
 
     private String buildMessage(AppointmentNotificationType type, Appointment appointment, String actorEmail) {
+        String date = appointment.getStartDateTime().format(DateTimeFormatter.ofPattern("dd/MM/yyyy 'à' HH:mm"));
         return switch (type) {
-            case CREATED -> "Rendez-vous cree par " + actorEmail;
+            case CREATED -> "Votre rendez-vous du " + date + " est en attente de confirmation.";
             case UPDATED -> "Rendez-vous modifie par " + actorEmail;
-            case CANCELLED -> "Rendez-vous annule par " + actorEmail;
-            case STATUS_CHANGED -> "Statut du rendez-vous modifie par " + actorEmail;
+            case CANCELLED -> "Votre rendez-vous a été annulé.";
+            case STATUS_CHANGED -> appointment.getStatus() == AppointmentStatus.CONFIRMED
+                    ? "Votre rendez-vous du " + date + " est confirmé."
+                    : "Le statut de votre rendez-vous du " + date + " est " + appointment.getStatus() + ".";
             case REMINDER -> "Rappel pour le rendez-vous commencant a " + appointment.getStartDateTime();
         };
     }

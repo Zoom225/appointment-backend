@@ -36,7 +36,7 @@ class AppointmentAvailabilityIntegrationTests {
     @Test
     void createAppointmentRejectsOutsideWorkingHours() {
         User user = createUser("outside.hours@example.com");
-        LocalDate date = LocalDate.of(2026, 8, 10);
+        LocalDate date = AppointmentTestDates.nextWorkingDate();
 
         Appointment appointment = Appointment.builder()
                 .user(user)
@@ -51,7 +51,7 @@ class AppointmentAvailabilityIntegrationTests {
     @Test
     void getAvailableSlotsSkipsBusySlot() {
         User user = createUser("slots@example.com");
-        LocalDate date = LocalDate.of(2026, 8, 10);
+        LocalDate date = AppointmentTestDates.nextWorkingDate();
 
         Appointment booked = Appointment.builder()
                 .user(user)
@@ -73,7 +73,7 @@ class AppointmentAvailabilityIntegrationTests {
     @Test
     void createAppointmentWithinWorkingHoursSavesPendingAppointment() {
         User user = createUser("valid.hours@example.com");
-        LocalDate date = LocalDate.of(2026, 8, 10);
+        LocalDate date = AppointmentTestDates.nextWorkingDate();
 
         Appointment appointment = Appointment.builder()
                 .user(user)
