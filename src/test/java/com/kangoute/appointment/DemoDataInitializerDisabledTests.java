@@ -8,7 +8,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@SpringBootTest(properties = "app.demo.enabled=false")
+@SpringBootTest(properties = {
+        "spring.datasource.url=jdbc:h2:mem:demo-data-disabled;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DATABASE_TO_UPPER=false",
+        "app.demo.enabled=false"
+})
 @Transactional
 class DemoDataInitializerDisabledTests {
 
