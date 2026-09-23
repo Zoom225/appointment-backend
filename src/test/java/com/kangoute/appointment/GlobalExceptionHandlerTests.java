@@ -65,6 +65,15 @@ class GlobalExceptionHandlerTests {
     }
 
     @Test
+    void bookingLockContentionReturnsSafeConflict() {
+        ResponseEntity<ApiErrorResponse> response = handler.handleBookingContention(
+                new org.springframework.dao.CannotAcquireLockException("internal database details"),
+                request("/api/appointments"));
+        assertError(response, HttpStatus.CONFLICT,
+                "Le calendrier est en cours de modification. Veuillez réessayer.", "/api/appointments");
+    }
+
+    @Test
     void unexpectedErrorResponseDoesNotExposeInternalExceptionDetails() {
         ResponseEntity<ApiErrorResponse> response = handler.handleUnexpected(
                 new IllegalStateException("SQL token password internal detail"),

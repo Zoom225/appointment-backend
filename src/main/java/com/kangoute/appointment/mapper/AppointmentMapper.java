@@ -28,6 +28,8 @@ public class AppointmentMapper {
     public AppointmentResponse toResponse(Appointment appointment) {
         AppointmentResponse response = new AppointmentResponse();
         response.setId(appointment.getId());
+        response.setCreatedAt(appointment.getCreatedAt());
+        response.setUpdatedAt(appointment.getUpdatedAt());
         response.setStartDateTime(appointment.getStartDateTime());
         response.setEndDateTime(appointment.getEndDateTime());
         response.setReason(appointment.getReason());

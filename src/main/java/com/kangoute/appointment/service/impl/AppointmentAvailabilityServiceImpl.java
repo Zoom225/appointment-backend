@@ -3,6 +3,7 @@ package com.kangoute.appointment.service.impl;
 import com.kangoute.appointment.config.AppointmentAvailabilityProperties;
 import com.kangoute.appointment.dto.response.AppointmentAvailabilitySlotResponse;
 import com.kangoute.appointment.entity.Appointment;
+import com.kangoute.appointment.enums.AppointmentStatus;
 import com.kangoute.appointment.exception.AppointmentOutsideAvailabilityException;
 import com.kangoute.appointment.repository.AppointmentRepository;
 import com.kangoute.appointment.service.AppointmentAvailabilityService;
@@ -11,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.time.DayOfWeek;
 import java.time.Duration;
 import java.time.LocalDate;
@@ -27,6 +29,7 @@ public class AppointmentAvailabilityServiceImpl implements AppointmentAvailabili
     private final AppointmentRepository appointmentRepository;
     private final UserService userService;
     private final AppointmentAvailabilityProperties properties;
+    private final Clock clock;
 
     @Override
     public void validateAppointmentWindow(LocalDateTime startDateTime, LocalDateTime endDateTime) {
@@ -47,11 +50,21 @@ public class AppointmentAvailabilityServiceImpl implements AppointmentAvailabili
         if (startTime.isBefore(properties.getWorkdayStart()) || endTime.isAfter(properties.getWorkdayEnd())) {
             throw new AppointmentOutsideAvailabilityException("Le rendez-vous doit rester dans les horaires de travail");
         }
+        Duration duration = Duration.between(startDateTime, endDateTime);
+        Duration offset = Duration.between(properties.getWorkdayStart(), startTime);
+        long slotSeconds = properties.getSlotMinutes() * 60L;
+        if (duration.isNegative() || duration.isZero() || duration.toSeconds() % slotSeconds != 0
+                || duration.getNano() != 0 || offset.toSeconds() % slotSeconds != 0 || offset.getNano() != 0) {
+            throw new AppointmentOutsideAvailabilityException("Le rendez-vous doit respecter la grille des créneaux de " + properties.getSlotMinutes() + " minutes.");
+        }
     }
 
     @Override
     public List<AppointmentAvailabilitySlotResponse> getAvailableSlots(Long userId, LocalDate date) {
         userService.getUserById(userId);
+        if (properties.getSlotMinutes() <= 0) {
+            throw new AppointmentOutsideAvailabilityException("La duree du creneau doit etre superieure a zero");
+        }
 
         if (!properties.getWorkingDays().contains(date.getDayOfWeek())) {
             return List.of();
@@ -62,7 +75,8 @@ public class AppointmentAvailabilityServiceImpl implements AppointmentAvailabili
         Duration slotDuration = Duration.ofMinutes(properties.getSlotMinutes());
 
         List<Appointment> appointments = appointmentRepository
-                .findByUserIdAndStartDateTimeLessThanAndEndDateTimeGreaterThan(userId, windowEnd, windowStart)
+                .findByStatusInAndStartDateTimeLessThanAndEndDateTimeGreaterThan(
+                        AppointmentStatus.activeStatuses(), windowEnd, windowStart)
                 .stream()
                 .sorted(Comparator.comparing(Appointment::getStartDateTime))
                 .toList();
@@ -77,7 +91,7 @@ public class AppointmentAvailabilityServiceImpl implements AppointmentAvailabili
                             && slotEnd.isAfter(appointment.getStartDateTime())
             );
 
-            if (!busy) {
+            if (!busy && slotStart.isAfter(LocalDateTime.now(clock))) {
                 AppointmentAvailabilitySlotResponse slot = new AppointmentAvailabilitySlotResponse();
                 slot.setStartDateTime(slotStart);
                 slot.setEndDateTime(slotEnd);

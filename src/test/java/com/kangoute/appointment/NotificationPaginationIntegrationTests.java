@@ -49,15 +49,15 @@ class NotificationPaginationIntegrationTests {
     void userNotificationsCanBePaginatedAndFiltered() {
         User user = createUser("notif.page@example.com");
         authenticateAs(user);
-        LocalDate date = LocalDate.of(2026, 8, 10);
+        LocalDate date = AppointmentTestDates.nextWorkingDate();
 
-        appointmentService.createAppointment(Appointment.builder()
+        Appointment first = appointmentService.createAppointment(Appointment.builder()
                 .user(user)
                 .startDateTime(date.atTime(9, 0))
                 .endDateTime(date.atTime(9, 30))
                 .reason("One")
                 .build());
-        appointmentService.createAppointment(Appointment.builder()
+        appointmentService.updateAppointment(first.getId(), Appointment.builder()
                 .user(user)
                 .startDateTime(date.atTime(10, 0))
                 .endDateTime(date.atTime(10, 30))
@@ -83,7 +83,7 @@ class NotificationPaginationIntegrationTests {
                 null
         );
 
-        assertEquals(2, createdOnly.getTotalElements());
+        assertEquals(1, createdOnly.getTotalElements());
 
         AppointmentNotificationResponse read = notificationController.markAsRead(firstPage.getContent().get(0).getId());
         assertEquals(read.getId(), firstPage.getContent().get(0).getId());
@@ -104,7 +104,7 @@ class NotificationPaginationIntegrationTests {
         User userA = createUser("admin.a@example.com");
         User userB = createUser("admin.b@example.com");
         authenticateAs(userA);
-        LocalDate date = LocalDate.of(2026, 8, 11);
+        LocalDate date = AppointmentTestDates.nextWorkingDate().plusDays(1);
 
         appointmentService.createAppointment(Appointment.builder()
                 .user(userA)

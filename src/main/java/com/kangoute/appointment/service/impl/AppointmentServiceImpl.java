@@ -1,25 +1,36 @@
 package com.kangoute.appointment.service.impl;
 
+import com.kangoute.appointment.dto.request.AppointmentCreateRequest;
 import com.kangoute.appointment.entity.Appointment;
+import com.kangoute.appointment.enums.AppointmentAuditAction;
+import com.kangoute.appointment.enums.AppointmentNotificationType;
 import com.kangoute.appointment.enums.AppointmentStatus;
 import com.kangoute.appointment.exception.AppointmentConflictException;
 import com.kangoute.appointment.exception.InvalidAppointmentTimeException;
 import com.kangoute.appointment.exception.ResourceNotFoundException;
+import com.kangoute.appointment.mapper.AppointmentMapper;
 import com.kangoute.appointment.repository.AppointmentRepository;
 import com.kangoute.appointment.repository.specification.AppointmentSpecifications;
-import com.kangoute.appointment.enums.AppointmentAuditAction;
-import com.kangoute.appointment.enums.AppointmentNotificationType;
+import com.kangoute.appointment.security.CurrentUserService;
 import com.kangoute.appointment.service.AppointmentAuditService;
 import com.kangoute.appointment.service.AppointmentAvailabilityService;
 import com.kangoute.appointment.service.AppointmentNotificationService;
 import com.kangoute.appointment.service.AppointmentService;
-import com.kangoute.appointment.security.CurrentUserService;
+import com.kangoute.appointment.service.UserService;
+import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -32,33 +43,30 @@ public class AppointmentServiceImpl implements AppointmentService {
     private final AppointmentAuditService appointmentAuditService;
     private final AppointmentNotificationService appointmentNotificationService;
     private final CurrentUserService currentUserService;
+    private final UserService userService;
+    private final AppointmentMapper appointmentMapper;
+    private final Clock clock;
+    private final EntityManager entityManager;
+
+    @Override
+    public Appointment bookAppointment(AppointmentCreateRequest request) {
+        Long userId = currentUserService.getCurrentUserId();
+        if (request.getUserId() != null) {
+            if (!currentUserService.isAdmin() && !request.getUserId().equals(userId)) {
+                throw new AccessDeniedException("Acces refuse");
+            }
+            if (currentUserService.isAdmin()) userId = request.getUserId();
+        }
+        return createAppointment(appointmentMapper.toEntity(request, userService.getUserById(userId)));
+    }
 
     @Override
     public Appointment createAppointment(Appointment appointment) {
-        if (appointment.getStartDateTime().isAfter(appointment.getEndDateTime())
-                || appointment.getStartDateTime().isEqual(appointment.getEndDateTime())) {
-            throw new InvalidAppointmentTimeException("L'heure de debut du rendez-vous doit etre avant l'heure de fin");
-        }
-
-        appointmentAvailabilityService.validateAppointmentWindow(
-                appointment.getStartDateTime(),
-                appointment.getEndDateTime()
-        );
-
-        boolean conflict = appointmentRepository.existsByUserIdAndStartDateTimeLessThanAndEndDateTimeGreaterThan(
-                appointment.getUser().getId(),
-                appointment.getEndDateTime(),
-                appointment.getStartDateTime()
-        );
-
-        if (conflict) {
-            throw new AppointmentConflictException("L'utilisateur a deja un rendez-vous sur ce creneau");
-        }
-
-        if (appointment.getStatus() == null) {
-            appointment.setStatus(AppointmentStatus.PENDING);
-        }
-        Appointment saved = appointmentRepository.save(appointment);
+        lockCalendar();
+        assertAccess(appointment);
+        validateReservation(appointment, null);
+        appointment.setStatus(AppointmentStatus.PENDING);
+        Appointment saved = appointmentRepository.saveAndFlush(appointment);
         appointmentAuditService.record(saved, AppointmentAuditAction.CREATED, buildCreatedDetails(saved));
         appointmentNotificationService.notifyAppointmentEvent(
                 saved,
@@ -70,28 +78,12 @@ public class AppointmentServiceImpl implements AppointmentService {
 
     @Override
     public Appointment updateAppointment(Long id, Appointment appointment) {
-        Appointment existingAppointment = getAppointmentById(id);
-
-        if (appointment.getStartDateTime().isAfter(appointment.getEndDateTime())
-                || appointment.getStartDateTime().isEqual(appointment.getEndDateTime())) {
-            throw new InvalidAppointmentTimeException("L'heure de debut du rendez-vous doit etre avant l'heure de fin");
+        Appointment existingAppointment = lockedAppointment(id);
+        if (!existingAppointment.getStatus().isActive()) {
+            throw new AppointmentConflictException("Un rendez-vous terminé ou annulé ne peut plus être modifié.");
         }
-
-        appointmentAvailabilityService.validateAppointmentWindow(
-                appointment.getStartDateTime(),
-                appointment.getEndDateTime()
-        );
-
-        boolean conflict = appointmentRepository.existsByUserIdAndIdNotAndStartDateTimeLessThanAndEndDateTimeGreaterThan(
-                existingAppointment.getUser().getId(),
-                existingAppointment.getId(),
-                appointment.getEndDateTime(),
-                appointment.getStartDateTime()
-        );
-
-        if (conflict) {
-            throw new AppointmentConflictException("L'utilisateur a deja un rendez-vous sur ce creneau");
-        }
+        appointment.setUser(existingAppointment.getUser());
+        validateReservation(appointment, id);
 
         String before = buildAppointmentSummary(existingAppointment);
         existingAppointment.setStartDateTime(appointment.getStartDateTime());
@@ -99,7 +91,7 @@ public class AppointmentServiceImpl implements AppointmentService {
         existingAppointment.setReason(appointment.getReason());
         existingAppointment.setReminderSentAt(null);
 
-        Appointment saved = appointmentRepository.save(existingAppointment);
+        Appointment saved = appointmentRepository.saveAndFlush(existingAppointment);
         appointmentAuditService.record(saved, AppointmentAuditAction.UPDATED, before + " -> " + buildAppointmentSummary(saved));
         appointmentNotificationService.notifyAppointmentEvent(
                 saved,
@@ -111,13 +103,11 @@ public class AppointmentServiceImpl implements AppointmentService {
 
     @Override
     public Appointment cancelAppointment(Long id) {
-        Appointment existingAppointment = getAppointmentById(id);
-        if (existingAppointment.getStatus() == AppointmentStatus.CANCELLED) {
-            return existingAppointment;
-        }
+        Appointment existingAppointment = lockedAppointment(id);
+        validateTransition(existingAppointment, AppointmentStatus.CANCELLED);
         existingAppointment.setStatus(AppointmentStatus.CANCELLED);
         existingAppointment.setReminderSentAt(null);
-        Appointment saved = appointmentRepository.save(existingAppointment);
+        Appointment saved = appointmentRepository.saveAndFlush(existingAppointment);
         appointmentAuditService.record(saved, AppointmentAuditAction.CANCELLED, "Statut change en ANNULE");
         appointmentNotificationService.notifyAppointmentEvent(
                 saved,
@@ -129,14 +119,18 @@ public class AppointmentServiceImpl implements AppointmentService {
 
     @Override
     public Appointment updateStatus(Long id, AppointmentStatus status) {
-        Appointment existingAppointment = getAppointmentById(id);
+        if (status == AppointmentStatus.CANCELLED) return cancelAppointment(id);
+        if (!currentUserService.isAdmin()) throw new AccessDeniedException("Acces refuse");
+        Appointment existingAppointment = lockedAppointment(id);
         if (status == null) {
             throw new InvalidAppointmentTimeException("Le statut du rendez-vous ne doit pas etre nul");
         }
         AppointmentStatus before = existingAppointment.getStatus();
+        validateTransition(existingAppointment, status);
+        if (status.isActive()) validateReservation(existingAppointment, id);
         existingAppointment.setStatus(status);
         existingAppointment.setReminderSentAt(null);
-        Appointment saved = appointmentRepository.save(existingAppointment);
+        Appointment saved = appointmentRepository.saveAndFlush(existingAppointment);
         appointmentAuditService.record(saved, AppointmentAuditAction.STATUS_CHANGED, "Statut change de " + before + " a " + status);
         appointmentNotificationService.notifyAppointmentEvent(
                 saved,
@@ -149,13 +143,16 @@ public class AppointmentServiceImpl implements AppointmentService {
     @Override
     @Transactional(readOnly = true)
     public Appointment getAppointmentById(Long id) {
-        return appointmentRepository.findById(id)
+        Appointment appointment = appointmentRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Rendez-vous introuvable avec l'identifiant : " + id));
+        assertAccess(appointment);
+        return appointment;
     }
 
     @Override
     @Transactional(readOnly = true)
-    public Page<Appointment> getAppointmentsByUserId(Long userId, Pageable pageable, AppointmentStatus status, java.time.LocalDateTime startFrom, java.time.LocalDateTime startTo) {
+    public Page<Appointment> getAppointmentsByUserId(Long userId, Pageable pageable, AppointmentStatus status, LocalDateTime startFrom, LocalDateTime startTo) {
+        userId = authorizedUserId(userId);
         return appointmentRepository.findAll(
                 AppointmentSpecifications.hasUserId(userId)
                         .and(AppointmentSpecifications.hasStatus(status))
@@ -166,10 +163,19 @@ public class AppointmentServiceImpl implements AppointmentService {
 
     @Override
     @Transactional(readOnly = true)
-    public Page<Appointment> getAllAppointments(Pageable pageable, Long userId, AppointmentStatus status, java.time.LocalDateTime startFrom, java.time.LocalDateTime startTo) {
+    public Page<Appointment> getAllAppointments(Pageable pageable, Long userId, AppointmentStatus status, LocalDateTime startFrom, LocalDateTime startTo) {
+        return searchAppointments(pageable, userId, status, startFrom, startTo, null);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<Appointment> searchAppointments(Pageable pageable, Long userId, AppointmentStatus status,
+            LocalDateTime startFrom, LocalDateTime startTo, String query) {
+        userId = authorizedUserId(userId);
         return appointmentRepository.findAll(
                 AppointmentSpecifications.hasUserId(userId)
                         .and(AppointmentSpecifications.hasStatus(status))
+                        .and(AppointmentSpecifications.matchesUser(query))
                         .and(AppointmentSpecifications.overlaps(startFrom, startTo)),
                 pageable
         );
@@ -178,17 +184,89 @@ public class AppointmentServiceImpl implements AppointmentService {
     @Override
     @Transactional(readOnly = true)
     public List<Appointment> getAppointmentsByUserId(Long userId) {
-        return appointmentRepository.findByUserId(userId);
+        return appointmentRepository.findByUserId(authorizedUserId(userId));
     }
 
     @Override
     @Transactional(readOnly = true)
     public List<Appointment> getAllAppointments() {
-        return appointmentRepository.findAll();
+        Long userId = authorizedUserId(null);
+        return userId == null ? appointmentRepository.findAll() : appointmentRepository.findByUserId(userId);
     }
 
     private String buildCreatedDetails(Appointment appointment) {
         return "Cree " + buildAppointmentSummary(appointment);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<Appointment> getMyAppointments(Pageable pageable, boolean upcoming) {
+        var selection = AppointmentSpecifications.upcoming(LocalDateTime.now(clock));
+        if (!upcoming) selection = Specification.not(selection);
+        if (pageable.getSort().isUnsorted()) {
+            pageable = PageRequest.of(pageable.getPageNumber(), pageable.getPageSize(),
+                    Sort.by(upcoming ? Sort.Direction.ASC : Sort.Direction.DESC, "startDateTime").and(Sort.by("id")));
+        }
+        return appointmentRepository.findAll(selection.and(
+                AppointmentSpecifications.hasUserId(currentUserService.getCurrentUserId())), pageable);
+    }
+
+    private void lockCalendar() {
+        if (appointmentRepository.lockBookingCalendar() == null) {
+            throw new IllegalStateException("Booking lock is missing; apply database migrations");
+        }
+    }
+
+    private Appointment lockedAppointment(Long id) {
+        lockCalendar();
+        Appointment appointment = getAppointmentById(id);
+        entityManager.refresh(appointment);
+        assertAccess(appointment);
+        return appointment;
+    }
+
+    private void assertAccess(Appointment appointment) {
+        // Internal jobs may run as SYSTEM; HTTP entry points require authentication.
+        var authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null && !currentUserService.isAdmin()
+                && !currentUserService.isCurrentUser(appointment.getUser().getId())) {
+            throw new AccessDeniedException("Acces refuse");
+        }
+    }
+
+    private Long authorizedUserId(Long requestedUserId) {
+        var authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || currentUserService.isAdmin()) return requestedUserId;
+        Long currentUserId = currentUserService.getCurrentUserId();
+        if (requestedUserId != null && !requestedUserId.equals(currentUserId)) {
+            throw new AccessDeniedException("Acces refuse");
+        }
+        return currentUserId;
+    }
+
+    private void validateReservation(Appointment appointment, Long excludedId) {
+        LocalDateTime now = LocalDateTime.now(clock);
+        if (appointment.getStartDateTime() == null || !appointment.getStartDateTime().isAfter(now)) {
+            throw new InvalidAppointmentTimeException("La date du rendez-vous doit être dans le futur.");
+        }
+        if (appointment.getEndDateTime() == null || !appointment.getEndDateTime().isAfter(appointment.getStartDateTime())) {
+            throw new InvalidAppointmentTimeException("L'heure de debut du rendez-vous doit etre avant l'heure de fin");
+        }
+        appointmentAvailabilityService.validateAppointmentWindow(appointment.getStartDateTime(), appointment.getEndDateTime());
+        if (appointmentRepository.hasFutureActiveAppointment(appointment.getUser().getId(),
+                AppointmentStatus.activeStatuses(), now, excludedId)) {
+            throw new AppointmentConflictException("Vous avez déjà un rendez-vous actif. Annulez-le ou attendez sa finalisation avant d'en réserver un nouveau.");
+        }
+        if (appointmentRepository.hasOccupiedSlot(AppointmentStatus.activeStatuses(),
+                appointment.getStartDateTime(), appointment.getEndDateTime(), excludedId)) {
+            throw new AppointmentConflictException("Ce créneau n'est plus disponible.");
+        }
+    }
+
+    private void validateTransition(Appointment appointment, AppointmentStatus target) {
+        if (!appointment.getStatus().canTransitionTo(target)) {
+            throw new AppointmentConflictException("Transition de statut non autorisée : " + appointment.getStatus() + " -> " + target);
+        }
     }
 
     private String buildAppointmentSummary(Appointment appointment) {

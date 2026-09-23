@@ -50,7 +50,7 @@ class AppointmentAuditIntegrationTests {
         User owner = createUser("audit.owner@example.com");
         authenticateAs(owner);
 
-        LocalDate date = LocalDate.of(2026, 8, 10);
+        LocalDate date = AppointmentTestDates.nextWorkingDate();
         Appointment created = appointmentService.createAppointment(Appointment.builder()
                 .user(owner)
                 .startDateTime(date.atTime(9, 0))
@@ -63,7 +63,9 @@ class AppointmentAuditIntegrationTests {
         updateRequest.setStartDateTime(date.atTime(10, 0));
         updateRequest.setEndDateTime(date.atTime(10, 30));
         appointmentService.updateAppointment(created.getId(), toAppointment(updateRequest, owner));
+        authenticateAs(adminUser());
         appointmentService.updateStatus(created.getId(), AppointmentStatus.CONFIRMED);
+        authenticateAs(owner);
         appointmentService.cancelAppointment(created.getId());
 
         authenticateAs(adminUser());
@@ -80,7 +82,7 @@ class AppointmentAuditIntegrationTests {
     @Test
     void auditDefaultsToSystemWhenNoAuthenticationIsPresent() {
         User owner = createUser("system.audit@example.com");
-        LocalDate date = LocalDate.of(2026, 8, 11);
+        LocalDate date = AppointmentTestDates.nextWorkingDate().plusDays(1);
 
         Appointment created = appointmentService.createAppointment(Appointment.builder()
                 .user(owner)

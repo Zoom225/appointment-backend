@@ -54,12 +54,12 @@ class AppointmentStatusPatchIntegrationTests {
 
     @BeforeEach
     void setUp() {
-        mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).build();
+        mockMvc = MockMvcBuilders.webAppContextSetup(webApplicationContext).apply(org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity()).build();
     }
 
     @Test
     void patchAppointmentStatusConfirmedReturns200AndPersistsStatus() throws Exception {
-        User owner = createUser("patch-owner@example.com");
+        User owner = createAdmin("patch-owner@example.com");
         String ownerToken = login(owner.getEmail(), "secret123");
         Long appointmentId = createAppointment(owner.getId());
 
@@ -83,7 +83,7 @@ class AppointmentStatusPatchIntegrationTests {
 
     @Test
     void patchScheduledAppointmentToConfirmedReturns200() throws Exception {
-        User owner = createUser("patch-scheduled-confirmed@example.com");
+        User owner = createAdmin("patch-scheduled-confirmed@example.com");
         String ownerToken = login(owner.getEmail(), "secret123");
         Long appointmentId = createAppointment(owner.getId());
 
@@ -112,7 +112,7 @@ class AppointmentStatusPatchIntegrationTests {
 
     @Test
     void patchConfirmedAppointmentToCompletedReturns200AndPersistsStatus() throws Exception {
-        User owner = createUser("patch-completed@example.com");
+        User owner = createAdmin("patch-completed@example.com");
         String ownerToken = login(owner.getEmail(), "secret123");
         Long appointmentId = createAppointment(owner.getId());
 
@@ -214,7 +214,7 @@ class AppointmentStatusPatchIntegrationTests {
 
     @Test
     void patchScheduledAppointmentToCancelledReturns200() throws Exception {
-        User owner = createUser("patch-scheduled-cancelled@example.com");
+        User owner = createAdmin("patch-scheduled-cancelled@example.com");
         String ownerToken = login(owner.getEmail(), "secret123");
         Long appointmentId = createAppointment(owner.getId());
 
@@ -364,8 +364,8 @@ class AppointmentStatusPatchIntegrationTests {
     private Long createAppointment(Long userId) {
         Appointment appointment = Appointment.builder()
                 .user(userService.getUserById(userId))
-                .startDateTime(java.time.LocalDate.of(2026, 8, 10).atTime(9, 0))
-                .endDateTime(java.time.LocalDate.of(2026, 8, 10).atTime(9, 30))
+                .startDateTime(AppointmentTestDates.nextWorkingDate().atTime(9, 0))
+                .endDateTime(AppointmentTestDates.nextWorkingDate().atTime(9, 30))
                 .reason("Consultation")
                 .build();
 

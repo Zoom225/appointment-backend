@@ -1,7 +1,7 @@
 package com.kangoute.appointment.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.FutureOrPresent;
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
 
 import java.time.LocalDateTime;
@@ -9,7 +9,6 @@ import java.time.LocalDateTime;
 public class AppointmentCreateRequest {
 
     @NotNull
-    @FutureOrPresent
     private LocalDateTime startDateTime;
 
     @NotNull
@@ -18,7 +17,7 @@ public class AppointmentCreateRequest {
     @NotBlank
     private String reason;
 
-    @NotNull
+    @Schema(description = "Facultatif. USER : identité issue du JWT ; ADMIN : réservation pour cet utilisateur.")
     private Long userId;
 
     public LocalDateTime getStartDateTime() {

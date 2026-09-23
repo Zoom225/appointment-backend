@@ -59,7 +59,7 @@ class AppointmentNotificationIntegrationTests {
         User owner = createUser("notify.owner@example.com");
         authenticateAs(owner);
 
-        LocalDate date = LocalDate.of(2026, 8, 10);
+        LocalDate date = AppointmentTestDates.nextWorkingDate();
         Appointment appointment = appointmentService.createAppointment(Appointment.builder()
                 .user(owner)
                 .startDateTime(date.atTime(11, 0))
@@ -110,7 +110,7 @@ class AppointmentNotificationIntegrationTests {
     @Test
     void reminderJobCreatesSingleReminderNotification() {
         User owner = createUser("reminder.owner@example.com");
-        LocalDateTime now = LocalDateTime.of(2026, 8, 10, 10, 0);
+        LocalDateTime now = AppointmentTestDates.nextWorkingDate().atTime(10, 0);
         Appointment appointment = appointmentService.createAppointment(Appointment.builder()
                 .user(owner)
                 .startDateTime(now.plusMinutes(60))

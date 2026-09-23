@@ -36,6 +36,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @SpringBootTest(properties = {
+        "spring.datasource.url=jdbc:h2:mem:demo-data-enabled;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DATABASE_TO_UPPER=false",
         "app.demo.enabled=true",
         "app.demo.email=demo@gestion-rendez-vous.com",
         "app.demo.password=Demo2026!",
@@ -87,6 +88,8 @@ class DemoDataInitializerEnabledTests {
 
         List<Appointment> appointments = appointmentRepository.findByUserId(demoUser.getId());
         assertEquals(5, appointments.size());
+        assertEquals(1, appointments.stream().filter(appointment -> appointment.getStatus().isActive()
+                && appointment.getStartDateTime().isAfter(java.time.LocalDateTime.now())).count());
         assertTrue(appointments.stream().allMatch(appointment -> appointment.getUser().getId().equals(demoUser.getId())));
 
         Set<AppointmentStatus> statuses = appointments.stream()
