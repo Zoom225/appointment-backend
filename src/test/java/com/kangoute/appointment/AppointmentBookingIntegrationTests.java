@@ -281,6 +281,7 @@ class AppointmentBookingIntegrationTests {
                 .content("{\"status\":\"" + state + "\"}"));
     }
     private String payload(LocalDateTime start, LocalDateTime end) {
-        return "{\"startDateTime\":\"" + start + "\",\"endDateTime\":\"" + end + "\",\"reason\":\"Consultation\"}";
+        return "{\"startDateTime\":\"" + start + "\",\"endDateTime\":\"" + end + "\",\"reason\":\"Consultation\","
+                + "\"contactFirstName\":\"Jean\",\"contactLastName\":\"Dupont\",\"contactEmail\":\"contact@example.com\"}";
     }
 }

@@ -275,6 +275,7 @@ class AppointmentStatusPatchIntegrationTests {
                                   "startDateTime": "2026-08-10T10:00:00",
                                   "endDateTime": "2026-08-10T10:30:00",
                                   "reason": "Past start",
+                                  "contactFirstName": "Jean", "contactLastName": "Dupont", "contactEmail": "contact@example.com",
                                   "userId": %d
                                 }
                                 """.formatted(owner.getId())))
@@ -315,6 +316,7 @@ class AppointmentStatusPatchIntegrationTests {
                                   "startDateTime": "%s",
                                   "endDateTime": "%s",
                                   "reason": "Valid create",
+                                  "contactFirstName": "Jean", "contactLastName": "Dupont", "contactEmail": "contact@example.com",
                                   "userId": %d
                                 }
                                 """.formatted(date.atTime(12, 0), date.atTime(12, 30), owner.getId())))

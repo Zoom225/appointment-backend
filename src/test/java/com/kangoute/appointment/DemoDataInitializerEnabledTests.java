@@ -218,7 +218,8 @@ class DemoDataInitializerEnabledTests {
                         .header("Authorization", "Bearer " + userToken)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(java.util.Map.of(
-                                "startDateTime", start, "endDateTime", end, "reason", "Portfolio demo"))))
+                                "startDateTime", start, "endDateTime", end, "reason", "Portfolio demo",
+                                "contactFirstName", "Demo", "contactLastName", "Utilisateur", "contactEmail", "contact@example.com"))))
                 .andExpect(MockMvcResultMatchers.status().isCreated())
                 .andExpect(MockMvcResultMatchers.jsonPath("$.status").value("PENDING"));
         mockMvc.perform(MockMvcRequestBuilders.get("/api/admin/notifications")
@@ -239,6 +240,14 @@ class DemoDataInitializerEnabledTests {
         mockMvc.perform(MockMvcRequestBuilders.get("/api/admin/appointments?query=real.user@example.com")
                         .header("Authorization", bearer(fixture.demoAdminToken())))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.totalElements").value(0));
+        String realReference = appointmentRepository.findById(fixture.realAppointmentId()).orElseThrow().getPublicReference();
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/admin/appointments").param("query", realReference)
+                        .header("Authorization", bearer(fixture.demoAdminToken())))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.totalElements").value(0));
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/admin/appointments").param("query", "contact@example.com")
+                        .header("Authorization", bearer(fixture.demoAdminToken())))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.totalElements").value(1))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.content[0].id").value(fixture.demoAppointmentId()));
         mockMvc.perform(MockMvcRequestBuilders.get("/api/admin/appointments?page=1&size=1")
                         .header("Authorization", bearer(fixture.demoAdminToken())))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.totalElements").value(1))
@@ -313,7 +322,7 @@ class DemoDataInitializerEnabledTests {
         mockMvc.perform(MockMvcRequestBuilders.get("/api/admin/notifications").header("Authorization", demo))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.totalElements").value(2));
         mockMvc.perform(MockMvcRequestBuilders.get("/api/admin/notifications").header("Authorization", real))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.totalElements").value(3));
+                .andExpect(MockMvcResultMatchers.jsonPath("$.totalElements").value(5));
         mockMvc.perform(MockMvcRequestBuilders.get("/api/admin/notifications?recipientId=" + fixture.realUserId())
                         .header("Authorization", demo))
                 .andExpect(MockMvcResultMatchers.status().isForbidden());
@@ -448,7 +457,8 @@ class DemoDataInitializerEnabledTests {
                         .content(objectMapper.writeValueAsString(java.util.Map.of(
                                 "startDateTime", day.atTime(hour, 0).toString(),
                                 "endDateTime", day.atTime(hour, 30).toString(),
-                                "reason", "Test de portee admin"))))
+                                "reason", "Test de portee admin",
+                                "contactFirstName", "Demo", "contactLastName", "Utilisateur", "contactEmail", "contact@example.com"))))
                 .andExpect(MockMvcResultMatchers.status().isCreated())
                 .andReturn().getResponse().getContentAsString();
         return objectMapper.readTree(response).get("id").asLong();

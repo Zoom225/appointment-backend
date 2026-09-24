@@ -3,14 +3,17 @@ package com.kangoute.appointment.service.impl;
 import com.kangoute.appointment.dto.response.AppointmentNotificationResponse;
 import com.kangoute.appointment.entity.Appointment;
 import com.kangoute.appointment.entity.AppointmentNotification;
+import com.kangoute.appointment.entity.User;
 import com.kangoute.appointment.enums.DemoAccountType;
 import com.kangoute.appointment.config.DemoProperties;
 import com.kangoute.appointment.enums.AppointmentNotificationType;
 import com.kangoute.appointment.enums.AppointmentStatus;
+import com.kangoute.appointment.enums.RoleName;
 import com.kangoute.appointment.exception.ResourceNotFoundException;
 import com.kangoute.appointment.mapper.AppointmentNotificationMapper;
 import com.kangoute.appointment.repository.AppointmentNotificationRepository;
 import com.kangoute.appointment.repository.AppointmentRepository;
+import com.kangoute.appointment.repository.UserRepository;
 import com.kangoute.appointment.repository.specification.AppointmentNotificationSpecifications;
 import com.kangoute.appointment.service.AppointmentNotificationService;
 import com.kangoute.appointment.security.DemoAdminAccess;
@@ -37,6 +40,7 @@ public class AppointmentNotificationServiceImpl implements AppointmentNotificati
     private final AppointmentRepository appointmentRepository;
     private final DemoAdminAccess demoAdminAccess;
     private final DemoProperties demoProperties;
+    private final UserRepository userRepository;
 
     @Value("${appointment.notifications.reminder-minutes-before:60}")
     private int reminderMinutesBefore;
@@ -64,21 +68,33 @@ public class AppointmentNotificationServiceImpl implements AppointmentNotificati
                 .build();
 
         AppointmentNotification saved = appointmentNotificationRepository.save(notification);
+        if (type == AppointmentNotificationType.CREATED) {
+            for (var admin : userRepository.findDistinctByRolesNameAndDemoAccountType(
+                    RoleName.ROLE_ADMIN, DemoAccountType.NONE)) {
+                notifyAdmin(appointment, admin);
+            }
+        }
         if (type == AppointmentNotificationType.CREATED && demoProperties.isEnabled()
                 && appointment.getUser().getDemoAccountType() == DemoAccountType.USER) {
             var admin = demoAdminAccess.demoAdmin();
-            appointmentNotificationRepository.save(AppointmentNotification.builder()
+            notifyAdmin(appointment, admin);
+        }
+        return saved;
+    }
+
+    private void notifyAdmin(Appointment appointment, User admin) {
+        appointmentNotificationRepository.save(AppointmentNotification.builder()
                             .appointment(appointment)
                             .recipient(admin)
                             .type(AppointmentNotificationType.CREATED)
                             .title("Nouveau rendez-vous")
-                            .message(appointment.getUser().getFirstName() + " " + appointment.getUser().getLastName()
-                                    + " a demandé un rendez-vous pour le "
-                                    + appointment.getStartDateTime().format(DateTimeFormatter.ofPattern("dd/MM/yyyy 'à' HH:mm")) + ".")
+                            .message(appointment.getPublicReference() + " — "
+                                    + appointment.getContactFirstName() + " " + appointment.getContactLastName()
+                                    + " (" + appointment.getContactEmail() + ") a demandé un rendez-vous pour le "
+                                    + appointment.getStartDateTime().format(DateTimeFormatter.ofPattern("dd/MM/yyyy 'à' HH:mm"))
+                                    + ". Motif : " + appointment.getReason())
                             .createdAt(LocalDateTime.now())
                             .build());
-        }
-        return saved;
     }
 
     @Override
@@ -124,6 +140,8 @@ public class AppointmentNotificationServiceImpl implements AppointmentNotificati
         return appointmentNotificationRepository.findAll(
                 AppointmentNotificationSpecifications.hasRecipientId(recipientId)
                                 .and(AppointmentNotificationSpecifications.hasAppointmentUserId(demoUserId))
+                                .and(AppointmentNotificationSpecifications.hasRecipientIds(
+                                        demoUserId == null ? null : demoAdminAccess.visibleUserIds()))
                                 .and(AppointmentNotificationSpecifications.hasType(type))
                                 .and(AppointmentNotificationSpecifications.isUnread(unreadOnly))
                                 .and(AppointmentNotificationSpecifications.createdFrom(createdFrom))
@@ -147,7 +165,8 @@ public class AppointmentNotificationServiceImpl implements AppointmentNotificati
     public List<AppointmentNotificationResponse> getAllNotifications() {
         if (demoAdminAccess.isDemoAdmin()) {
             return appointmentNotificationRepository.findAll(
-                    AppointmentNotificationSpecifications.hasAppointmentUserId(demoAdminAccess.demoUserId()),
+                    AppointmentNotificationSpecifications.hasAppointmentUserId(demoAdminAccess.demoUserId())
+                            .and(AppointmentNotificationSpecifications.hasRecipientIds(demoAdminAccess.visibleUserIds())),
                     Sort.by(Sort.Direction.DESC, "createdAt")).stream()
                     .map(appointmentNotificationMapper::toResponse).toList();
         }

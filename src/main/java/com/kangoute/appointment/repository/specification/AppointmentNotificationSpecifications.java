@@ -5,10 +5,16 @@ import com.kangoute.appointment.enums.AppointmentNotificationType;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.time.LocalDateTime;
+import java.util.Set;
 
 public final class AppointmentNotificationSpecifications {
 
     private AppointmentNotificationSpecifications() {
+    }
+
+    public static Specification<AppointmentNotification> hasRecipientIds(Set<Long> recipientIds) {
+        return (root, query, cb) -> recipientIds == null ? cb.conjunction()
+                : root.get("recipient").get("id").in(recipientIds);
     }
 
     public static Specification<AppointmentNotification> hasRecipientId(Long recipientId) {

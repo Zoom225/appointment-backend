@@ -17,6 +17,8 @@ import com.kangoute.appointment.service.AppointmentAuditService;
 import com.kangoute.appointment.service.AppointmentAvailabilityService;
 import com.kangoute.appointment.service.AppointmentNotificationService;
 import com.kangoute.appointment.service.AppointmentService;
+import com.kangoute.appointment.service.AppointmentReferenceService;
+import com.kangoute.appointment.service.AppointmentMailService;
 import com.kangoute.appointment.service.UserService;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
@@ -33,6 +35,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Clock;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Locale;
 
 @Service
 @RequiredArgsConstructor
@@ -47,6 +50,8 @@ public class AppointmentServiceImpl implements AppointmentService {
     private final DemoAdminAccess demoAdminAccess;
     private final UserService userService;
     private final AppointmentMapper appointmentMapper;
+    private final AppointmentReferenceService referenceService;
+    private final AppointmentMailService mailService;
     private final Clock clock;
     private final EntityManager entityManager;
 
@@ -69,6 +74,16 @@ public class AppointmentServiceImpl implements AppointmentService {
         lockCalendar();
         assertAccess(appointment);
         validateReservation(appointment, null);
+        normalizeContact(appointment);
+        if (appointment.getPublicReference() == null) {
+            String reference;
+            do { reference = referenceService.generateReference(); }
+            while (appointmentRepository.existsByPublicReference(reference));
+            appointment.setPublicReference(reference);
+        }
+        if (appointment.getVerificationToken() == null) {
+            appointment.setVerificationToken(referenceService.generateVerificationToken());
+        }
         appointment.setStatus(AppointmentStatus.PENDING);
         Appointment saved = appointmentRepository.saveAndFlush(appointment);
         appointmentAuditService.record(saved, AppointmentAuditAction.CREATED, buildCreatedDetails(saved));
@@ -77,6 +92,7 @@ public class AppointmentServiceImpl implements AppointmentService {
                 AppointmentNotificationType.CREATED,
                 currentUserService.getCurrentUserEmailOrSystem()
         );
+        mailService.schedule(saved);
         return saved;
     }
 
@@ -118,6 +134,7 @@ public class AppointmentServiceImpl implements AppointmentService {
                 AppointmentNotificationType.CANCELLED,
                 currentUserService.getCurrentUserEmailOrSystem()
         );
+        mailService.schedule(saved);
         return saved;
     }
 
@@ -141,6 +158,7 @@ public class AppointmentServiceImpl implements AppointmentService {
                 AppointmentNotificationType.STATUS_CHANGED,
                 currentUserService.getCurrentUserEmailOrSystem()
         );
+        mailService.schedule(saved);
         return saved;
     }
 
@@ -200,6 +218,21 @@ public class AppointmentServiceImpl implements AppointmentService {
 
     private String buildCreatedDetails(Appointment appointment) {
         return "Cree " + buildAppointmentSummary(appointment);
+    }
+
+    private void normalizeContact(Appointment appointment) {
+        if (appointment.getContactFirstName() == null) appointment.setContactFirstName(appointment.getUser().getFirstName());
+        if (appointment.getContactLastName() == null) appointment.setContactLastName(appointment.getUser().getLastName());
+        if (appointment.getContactEmail() == null) appointment.setContactEmail(appointment.getUser().getEmail());
+        appointment.setContactFirstName(appointment.getContactFirstName().trim());
+        appointment.setContactLastName(appointment.getContactLastName().trim());
+        appointment.setContactEmail(appointment.getContactEmail().trim().toLowerCase(Locale.ROOT));
+        if (appointment.getContactFirstName().length() < 2 || appointment.getContactFirstName().length() > 80
+                || appointment.getContactLastName().length() < 2 || appointment.getContactLastName().length() > 80
+                || appointment.getContactEmail().length() > 254
+                || !appointment.getContactEmail().matches("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$")) {
+            throw new InvalidAppointmentTimeException("Coordonnees de contact invalides");
+        }
     }
 
     @Override
