@@ -9,6 +9,7 @@ import com.kangoute.appointment.entity.Appointment;
 import com.kangoute.appointment.enums.AppointmentStatus;
 import com.kangoute.appointment.mapper.AppointmentMapper;
 import com.kangoute.appointment.security.CurrentUserService;
+import com.kangoute.appointment.security.DemoAdminAccess;
 import com.kangoute.appointment.service.AppointmentAvailabilityService;
 import com.kangoute.appointment.service.AppointmentService;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
@@ -45,6 +46,7 @@ public class AppointmentController {
     private final AppointmentAvailabilityService appointmentAvailabilityService;
     private final AppointmentMapper appointmentMapper;
     private final CurrentUserService currentUserService;
+    private final DemoAdminAccess demoAdminAccess;
 
     @PostMapping
     @Operation(summary = "Réserver un rendez-vous en attente de confirmation", description = "L'utilisateur est déterminé par le JWT. Un seul rendez-vous actif futur est autorisé.")
@@ -121,6 +123,7 @@ public class AppointmentController {
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date
     ) {
         if (userId == null) userId = currentUserService.getCurrentUserId();
+        if (demoAdminAccess.isDemoAdmin()) userId = demoAdminAccess.restrictedUserId(userId);
         if (!currentUserService.isAdmin() && !currentUserService.isCurrentUser(userId)) {
             throw new AccessDeniedException("Vous ne pouvez acceder qu'a vos propres disponibilites");
         }

@@ -20,6 +20,11 @@ public final class AppointmentNotificationSpecifications {
         };
     }
 
+    public static Specification<AppointmentNotification> hasAppointmentUserId(Long userId) {
+        return (root, query, cb) -> userId == null ? cb.conjunction()
+                : cb.equal(root.get("appointment").get("user").get("id"), userId);
+    }
+
     public static Specification<AppointmentNotification> hasType(AppointmentNotificationType type) {
         return (root, query, cb) -> {
             if (type == null) {

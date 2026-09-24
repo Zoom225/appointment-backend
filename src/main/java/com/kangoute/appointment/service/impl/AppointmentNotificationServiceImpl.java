@@ -3,6 +3,8 @@ package com.kangoute.appointment.service.impl;
 import com.kangoute.appointment.dto.response.AppointmentNotificationResponse;
 import com.kangoute.appointment.entity.Appointment;
 import com.kangoute.appointment.entity.AppointmentNotification;
+import com.kangoute.appointment.enums.DemoAccountType;
+import com.kangoute.appointment.config.DemoProperties;
 import com.kangoute.appointment.enums.AppointmentNotificationType;
 import com.kangoute.appointment.enums.AppointmentStatus;
 import com.kangoute.appointment.exception.ResourceNotFoundException;
@@ -11,6 +13,7 @@ import com.kangoute.appointment.repository.AppointmentNotificationRepository;
 import com.kangoute.appointment.repository.AppointmentRepository;
 import com.kangoute.appointment.repository.specification.AppointmentNotificationSpecifications;
 import com.kangoute.appointment.service.AppointmentNotificationService;
+import com.kangoute.appointment.security.DemoAdminAccess;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
@@ -32,6 +35,8 @@ public class AppointmentNotificationServiceImpl implements AppointmentNotificati
     private final AppointmentNotificationRepository appointmentNotificationRepository;
     private final AppointmentNotificationMapper appointmentNotificationMapper;
     private final AppointmentRepository appointmentRepository;
+    private final DemoAdminAccess demoAdminAccess;
+    private final DemoProperties demoProperties;
 
     @Value("${appointment.notifications.reminder-minutes-before:60}")
     private int reminderMinutesBefore;
@@ -58,7 +63,22 @@ public class AppointmentNotificationServiceImpl implements AppointmentNotificati
                 .createdAt(LocalDateTime.now())
                 .build();
 
-        return appointmentNotificationRepository.save(notification);
+        AppointmentNotification saved = appointmentNotificationRepository.save(notification);
+        if (type == AppointmentNotificationType.CREATED && demoProperties.isEnabled()
+                && appointment.getUser().getDemoAccountType() == DemoAccountType.USER) {
+            var admin = demoAdminAccess.demoAdmin();
+            appointmentNotificationRepository.save(AppointmentNotification.builder()
+                            .appointment(appointment)
+                            .recipient(admin)
+                            .type(AppointmentNotificationType.CREATED)
+                            .title("Nouveau rendez-vous")
+                            .message(appointment.getUser().getFirstName() + " " + appointment.getUser().getLastName()
+                                    + " a demandé un rendez-vous pour le "
+                                    + appointment.getStartDateTime().format(DateTimeFormatter.ofPattern("dd/MM/yyyy 'à' HH:mm")) + ".")
+                            .createdAt(LocalDateTime.now())
+                            .build());
+        }
+        return saved;
     }
 
     @Override
@@ -99,8 +119,11 @@ public class AppointmentNotificationServiceImpl implements AppointmentNotificati
     @Override
     @Transactional(readOnly = true)
     public Page<AppointmentNotificationResponse> getAllNotifications(Pageable pageable, Long recipientId, AppointmentNotificationType type, Boolean unreadOnly, LocalDateTime createdFrom, LocalDateTime createdTo) {
+        demoAdminAccess.assertVisibleNotificationRecipient(recipientId);
+        Long demoUserId = demoAdminAccess.isDemoAdmin() ? demoAdminAccess.demoUserId() : null;
         return appointmentNotificationRepository.findAll(
                 AppointmentNotificationSpecifications.hasRecipientId(recipientId)
+                                .and(AppointmentNotificationSpecifications.hasAppointmentUserId(demoUserId))
                                 .and(AppointmentNotificationSpecifications.hasType(type))
                                 .and(AppointmentNotificationSpecifications.isUnread(unreadOnly))
                                 .and(AppointmentNotificationSpecifications.createdFrom(createdFrom))
@@ -122,6 +145,12 @@ public class AppointmentNotificationServiceImpl implements AppointmentNotificati
     @Override
     @Transactional(readOnly = true)
     public List<AppointmentNotificationResponse> getAllNotifications() {
+        if (demoAdminAccess.isDemoAdmin()) {
+            return appointmentNotificationRepository.findAll(
+                    AppointmentNotificationSpecifications.hasAppointmentUserId(demoAdminAccess.demoUserId()),
+                    Sort.by(Sort.Direction.DESC, "createdAt")).stream()
+                    .map(appointmentNotificationMapper::toResponse).toList();
+        }
         return appointmentNotificationRepository.findAllByOrderByCreatedAtDesc()
                 .stream()
                 .map(appointmentNotificationMapper::toResponse)

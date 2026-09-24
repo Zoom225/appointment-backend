@@ -38,7 +38,10 @@ public class ProductionEnvironmentConfig {
                 throw new IllegalStateException("JWT_SECRET must contain at least 32 decoded bytes");
             }
             if (environment.getProperty("app.demo.enabled", Boolean.class, false)) {
-                requireVariable(environment, "APP_DEMO_PASSWORD");
+                requireVariable(environment, "APP_DEMO_USER_EMAIL");
+                requireVariable(environment, "APP_DEMO_USER_PASSWORD");
+                requireVariable(environment, "APP_DEMO_ADMIN_EMAIL");
+                requireVariable(environment, "APP_DEMO_ADMIN_PASSWORD");
             }
         };
     }

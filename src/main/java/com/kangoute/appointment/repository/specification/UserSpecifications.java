@@ -3,10 +3,15 @@ package com.kangoute.appointment.repository.specification;
 import com.kangoute.appointment.entity.User;
 import com.kangoute.appointment.enums.RoleName;
 import org.springframework.data.jpa.domain.Specification;
+import java.util.Set;
 
 public final class UserSpecifications {
 
     private UserSpecifications() {
+    }
+
+    public static Specification<User> hasIds(Set<Long> ids) {
+        return (root, query, cb) -> root.get("id").in(ids);
     }
 
     public static Specification<User> matchesQuery(String query) {

@@ -135,7 +135,7 @@ class EnvironmentProfilesTests {
     void productionDemoRequiresExplicitPassword() {
         production(variables()).withPropertyValues("APP_DEMO_ENABLED=true").run(context -> {
             assertThat(context).hasFailed();
-            assertThat(context.getStartupFailure()).hasMessageContaining("APP_DEMO_PASSWORD");
+            assertThat(context.getStartupFailure()).hasMessageContaining("APP_DEMO_USER_EMAIL");
         });
     }
 

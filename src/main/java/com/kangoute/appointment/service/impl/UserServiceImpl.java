@@ -7,6 +7,7 @@ import com.kangoute.appointment.exception.ResourceNotFoundException;
 import com.kangoute.appointment.repository.UserRepository;
 import com.kangoute.appointment.repository.specification.UserSpecifications;
 import com.kangoute.appointment.service.RoleService;
+import com.kangoute.appointment.security.DemoAdminAccess;
 import com.kangoute.appointment.service.UserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -27,6 +28,7 @@ public class UserServiceImpl implements UserService {
     private final UserRepository userRepository;
     private final RoleService roleService;
     private final PasswordEncoder passwordEncoder;
+    private final DemoAdminAccess demoAdminAccess;
 
     @Override
     public User createUser(User user) {
@@ -43,13 +45,16 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional(readOnly = true)
     public User getUserByEmail(String email) {
-        return userRepository.findByEmail(email)
+        User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("Utilisateur introuvable avec l'email : " + email));
+        demoAdminAccess.assertVisibleUser(user.getId());
+        return user;
     }
 
     @Override
     @Transactional(readOnly = true)
     public User getUserById(Long id) {
+        demoAdminAccess.assertVisibleUser(id);
         return userRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Utilisateur introuvable avec l'identifiant : " + id));
     }
@@ -58,7 +63,10 @@ public class UserServiceImpl implements UserService {
     @Transactional(readOnly = true)
     public Page<User> getAllUsers(Pageable pageable, String query, RoleName role) {
         return userRepository.findAll(
-                UserSpecifications.matchesQuery(query).and(UserSpecifications.hasRole(role)),
+                UserSpecifications.matchesQuery(query).and(UserSpecifications.hasRole(role))
+                        .and(demoAdminAccess.isDemoAdmin()
+                                ? UserSpecifications.hasIds(demoAdminAccess.visibleUserIds())
+                                : (root, criteriaQuery, criteriaBuilder) -> criteriaBuilder.conjunction()),
                 pageable
         );
     }
@@ -66,11 +74,14 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional(readOnly = true)
     public List<User> getAllUsers() {
-        return userRepository.findAll();
+        return demoAdminAccess.isDemoAdmin()
+                ? userRepository.findAll(UserSpecifications.hasIds(demoAdminAccess.visibleUserIds()))
+                : userRepository.findAll();
     }
 
     @Override
     public User updateUser(Long id, User user) {
+        demoAdminAccess.denyUserMutation();
         User existingUser = getUserById(id);
 
         if (!existingUser.getEmail().equals(user.getEmail()) && userRepository.existsByEmail(user.getEmail())) {
@@ -90,6 +101,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     public void deleteUser(Long id) {
+        demoAdminAccess.denyUserMutation();
         User existingUser = getUserById(id);
         userRepository.delete(existingUser);
     }

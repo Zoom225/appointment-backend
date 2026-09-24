@@ -1,5 +1,6 @@
 package com.kangoute.appointment.entity;
 
+import com.kangoute.appointment.enums.DemoAccountType;
 import jakarta.persistence.*;
 import lombok.*;
 
@@ -35,6 +36,11 @@ public class User {
 
     @Column(nullable = false)
     private String password;
+
+    @Builder.Default
+    @Enumerated(EnumType.STRING)
+    @Column(name = "demo_account_type", nullable = false, columnDefinition = "varchar(16) default 'NONE'")
+    private DemoAccountType demoAccountType = DemoAccountType.NONE;
 
     @Builder.Default
     @ManyToMany(fetch = FetchType.EAGER)

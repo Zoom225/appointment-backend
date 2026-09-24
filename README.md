@@ -350,8 +350,9 @@ variable sans afficher sa valeur. Ne jamais réutiliser la clé publique du prof
 Générer le secret dans un environnement de confiance (par exemple avec
 `openssl rand -base64 32`) et le renseigner directement dans les variables sécurisées
 de Render. Ne jamais enregistrer de véritable secret, mot de passe ou token dans Git.
-Si la démo est volontairement activée en production, définir aussi `APP_DEMO_PASSWORD` ;
-le mot de passe de démonstration local n'est pas utilisé en prod.
+Si la démo est volontairement activée en production, définir aussi
+`APP_DEMO_USER_EMAIL`, `APP_DEMO_USER_PASSWORD`, `APP_DEMO_ADMIN_EMAIL` et
+`APP_DEMO_ADMIN_PASSWORD`. Les mots de passe locaux ne sont pas utilisés en prod.
 
 ### JPA, Flyway et tests
 
@@ -392,7 +393,7 @@ H2 peut être utilisé pour les tests ou certains environnements locaux.
 
 ## Compte de démonstration
 
-Le projet permet d'activer un compte de démonstration destiné à la présentation de l'application.
+Le projet permet d'activer deux comptes publics réservés à la démonstration de l'application.
 
 Activation :
 
@@ -400,15 +401,35 @@ Activation :
 APP_DEMO_ENABLED=true
 ```
 
-Compte de démonstration :
+Comptes de démonstration locaux (profil `dev`) :
 
 ```text
-Email : demo@gestion-rendez-vous.com
-Mot de passe local (dev uniquement) : Demo2026!
-Rôle : ROLE_USER
+USER  : demo.user@appointment.local / DemoUser2026! / ROLE_USER
+ADMIN : demo.admin@appointment.local / DemoAdmin2026! / ROLE_ADMIN
 ```
 
-> Ce compte est destiné uniquement à la démonstration de l'application.
+> Ces comptes sont publics et destinés uniquement à la démonstration. En production,
+> `APP_DEMO_ENABLED=false` par défaut ; les quatre variables d'identifiants ci-dessus
+> sont requises si la démo est activée. Les mots de passe sont encodés avant stockage.
+> L'initialiseur ne modifie aucun compte existant et ne précharge aucun rendez-vous actif.
+
+Le compte DEMO ADMIN conserve `ROLE_ADMIN`, mais ses accès backend sont limités aux
+rendez-vous, statistiques et notifications du DEMO USER. La liste des utilisateurs
+ne montre que les deux comptes démo ; leurs modifications par le DEMO ADMIN sont
+refusées pour empêcher toute promotion de rôle. Les accès directs par identifiant
+et les filtres restent soumis à la même limite. Un ADMIN ordinaire conserve ses
+droits actuels. Quand `APP_DEMO_ENABLED=false`, les identifiants démo configurés
+ne peuvent plus s'authentifier, même si leurs lignes existent encore en base.
+La migration V4 ajoute `demo_account_type` (`NONE`, `USER`, `ADMIN`) aux comptes.
+Les comptes historiques restent `NONE`. L'identité démo et le blocage de connexion
+quand la démo est désactivée reposent sur ce marqueur persistant, pas sur l'email.
+Les variables `APP_DEMO_USER_EMAIL` et `APP_DEMO_ADMIN_EMAIL` servent à la création
+initiale : leur modification ultérieure ne renomme pas les comptes déjà marqués.
+Si une adresse configurée appartient déjà à un compte non démo, le démarrage échoue
+sans convertir ni modifier ce compte.
+La création d'un rendez-vous démo génère la notification utilisateur habituelle
+et une notification « Nouveau rendez-vous » destinée au DEMO ADMIN, liée au même
+rendez-vous. Les autres réservations ne génèrent aucune notification démo.
 
 ---
 

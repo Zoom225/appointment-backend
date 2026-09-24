@@ -12,6 +12,7 @@ import com.kangoute.appointment.mapper.AppointmentMapper;
 import com.kangoute.appointment.repository.AppointmentRepository;
 import com.kangoute.appointment.repository.specification.AppointmentSpecifications;
 import com.kangoute.appointment.security.CurrentUserService;
+import com.kangoute.appointment.security.DemoAdminAccess;
 import com.kangoute.appointment.service.AppointmentAuditService;
 import com.kangoute.appointment.service.AppointmentAvailabilityService;
 import com.kangoute.appointment.service.AppointmentNotificationService;
@@ -43,6 +44,7 @@ public class AppointmentServiceImpl implements AppointmentService {
     private final AppointmentAuditService appointmentAuditService;
     private final AppointmentNotificationService appointmentNotificationService;
     private final CurrentUserService currentUserService;
+    private final DemoAdminAccess demoAdminAccess;
     private final UserService userService;
     private final AppointmentMapper appointmentMapper;
     private final Clock clock;
@@ -57,6 +59,8 @@ public class AppointmentServiceImpl implements AppointmentService {
             }
             if (currentUserService.isAdmin()) userId = request.getUserId();
         }
+        demoAdminAccess.assertVisibleUser(userId);
+        if (demoAdminAccess.isDemoAdmin()) demoAdminAccess.assertDemoAppointmentOwner(userId);
         return createAppointment(appointmentMapper.toEntity(request, userService.getUserById(userId)));
     }
 
@@ -228,6 +232,7 @@ public class AppointmentServiceImpl implements AppointmentService {
     private void assertAccess(Appointment appointment) {
         // Internal jobs may run as SYSTEM; HTTP entry points require authentication.
         var authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication != null) demoAdminAccess.assertDemoAppointmentOwner(appointment.getUser().getId());
         if (authentication != null && !currentUserService.isAdmin()
                 && !currentUserService.isCurrentUser(appointment.getUser().getId())) {
             throw new AccessDeniedException("Acces refuse");
@@ -236,7 +241,8 @@ public class AppointmentServiceImpl implements AppointmentService {
 
     private Long authorizedUserId(Long requestedUserId) {
         var authentication = SecurityContextHolder.getContext().getAuthentication();
-        if (authentication == null || currentUserService.isAdmin()) return requestedUserId;
+        if (authentication == null) return requestedUserId;
+        if (currentUserService.isAdmin()) return demoAdminAccess.restrictedUserId(requestedUserId);
         Long currentUserId = currentUserService.getCurrentUserId();
         if (requestedUserId != null && !requestedUserId.equals(currentUserId)) {
             throw new AccessDeniedException("Acces refuse");
