@@ -16,7 +16,15 @@ class AppointmentMigrationTests {
              var statement = connection.createStatement()) {
             statement.execute("create table appointments (id bigint primary key, status varchar(30), reason varchar(255))");
             statement.execute("insert into appointments values (42, 'SCHEDULED', 'Existing appointment')");
+            statement.execute("create table users (id bigint primary key, email varchar(255))");
+            statement.execute("insert into users values (7, 'existing@example.com')");
             Flyway.configure().dataSource(url, "sa", "").baselineOnMigrate(true).load().migrate();
+            try (var row = statement.executeQuery("select id, demo_account_type from users")) {
+                assertTrue(row.next());
+                assertEquals(7, row.getLong("id"));
+                assertEquals("NONE", row.getString("demo_account_type"));
+                assertFalse(row.next());
+            }
             try (var row = statement.executeQuery("select id, status, reason, created_at, updated_at from appointments")) {
                 assertTrue(row.next());
                 assertEquals(42, row.getLong("id"));
