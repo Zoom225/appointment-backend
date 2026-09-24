@@ -25,13 +25,18 @@ class AppointmentMigrationTests {
                 assertEquals("NONE", row.getString("demo_account_type"));
                 assertFalse(row.next());
             }
-            try (var row = statement.executeQuery("select id, status, reason, created_at, updated_at from appointments")) {
+            try (var row = statement.executeQuery("select * from appointments")) {
                 assertTrue(row.next());
                 assertEquals(42, row.getLong("id"));
                 assertEquals("SCHEDULED", row.getString("status"));
                 assertEquals("Existing appointment", row.getString("reason"));
                 assertNull(row.getTimestamp("created_at"));
                 assertNull(row.getTimestamp("updated_at"));
+                assertNull(row.getString("contact_first_name"));
+                assertNull(row.getString("contact_last_name"));
+                assertNull(row.getString("contact_email"));
+                assertNull(row.getString("public_reference"));
+                assertNull(row.getString("verification_token"));
                 assertFalse(row.next());
             }
             try (var row = statement.executeQuery("select id from appointment_booking_lock")) {

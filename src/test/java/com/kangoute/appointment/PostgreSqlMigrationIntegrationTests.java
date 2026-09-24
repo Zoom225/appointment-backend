@@ -37,7 +37,7 @@ class PostgreSqlMigrationIntegrationTests {
 
             try (var result = statement.executeQuery("select version from flyway_schema_history where success order by installed_rank desc limit 1")) {
                 assertTrue(result.next());
-                assertEquals("4", result.getString(1));
+                assertEquals("5", result.getString(1));
             }
             try (var result = statement.executeQuery("select id, email, demo_account_type from users")) {
                 assertTrue(result.next());
@@ -51,15 +51,27 @@ class PostgreSqlMigrationIntegrationTests {
                 assertEquals(1L, result.getLong(1));
                 assertFalse(result.next());
             }
-            try (var result = statement.executeQuery("select id, status, reason, created_at, updated_at from appointments")) {
+            try (var result = statement.executeQuery("select * from appointments")) {
                 assertTrue(result.next());
                 assertEquals(42L, result.getLong("id"));
                 assertEquals("SCHEDULED", result.getString("status"));
                 assertEquals("Historical appointment", result.getString("reason"));
                 assertNull(result.getTimestamp("created_at"));
                 assertNull(result.getTimestamp("updated_at"));
+                assertNull(result.getString("contact_first_name"));
+                assertNull(result.getString("contact_last_name"));
+                assertNull(result.getString("contact_email"));
+                assertNull(result.getString("public_reference"));
+                assertNull(result.getString("verification_token"));
                 assertFalse(result.next());
             }
+            statement.execute("update appointments set public_reference='RDV-test', verification_token='test-token' where id=42");
+            var duplicateReference = org.junit.jupiter.api.Assertions.assertThrows(java.sql.SQLException.class,
+                    () -> statement.execute("insert into appointments (id, public_reference) values (43, 'RDV-test')"));
+            assertEquals("23505", duplicateReference.getSQLState());
+            var duplicateToken = org.junit.jupiter.api.Assertions.assertThrows(java.sql.SQLException.class,
+                    () -> statement.execute("insert into appointments (id, verification_token) values (44, 'test-token')"));
+            assertEquals("23505", duplicateToken.getSQLState());
         }
     }
 }

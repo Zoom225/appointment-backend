@@ -15,6 +15,9 @@ public class AppointmentMapper {
         appointment.setStartDateTime(request.getStartDateTime());
         appointment.setEndDateTime(request.getEndDateTime());
         appointment.setReason(request.getReason());
+        appointment.setContactFirstName(request.getContactFirstName());
+        appointment.setContactLastName(request.getContactLastName());
+        appointment.setContactEmail(request.getContactEmail());
         appointment.setUser(user);
         return appointment;
     }
@@ -35,6 +38,10 @@ public class AppointmentMapper {
         response.setReason(appointment.getReason());
         response.setStatus(appointment.getStatus());
         response.setUserId(appointment.getUser().getId());
+        response.setPublicReference(appointment.getPublicReference());
+        response.setContactFirstName(appointment.getContactFirstName());
+        response.setContactLastName(appointment.getContactLastName());
+        response.setContactEmail(appointment.getContactEmail());
         return response;
     }
 }

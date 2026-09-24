@@ -639,3 +639,5 @@ Ce projet démontre la conception et le développement d'un backend professionne
 - déploiement cloud.
 
 Il constitue un projet de démonstration destiné à présenter mes compétences en développement **Java / Spring Boot / Angular**.
+
+Le contrat de réservation avec coordonnées, la migration V5, le QR de vérification et les variables SMTP sont décrits dans [Réservation, QR et email](docs/appointment-confirmation-qr-mail.md).

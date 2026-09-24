@@ -19,7 +19,11 @@ public final class AppointmentSpecifications {
                     .replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "%";
             return cb.or(cb.like(cb.lower(root.get("user").get("email")), pattern, '\\'),
                     cb.like(cb.lower(root.get("user").get("firstName")), pattern, '\\'),
-                    cb.like(cb.lower(root.get("user").get("lastName")), pattern, '\\'));
+                    cb.like(cb.lower(root.get("user").get("lastName")), pattern, '\\'),
+                    cb.like(cb.lower(root.get("publicReference")), pattern, '\\'),
+                    cb.like(cb.lower(root.get("contactFirstName")), pattern, '\\'),
+                    cb.like(cb.lower(root.get("contactLastName")), pattern, '\\'),
+                    cb.like(cb.lower(root.get("contactEmail")), pattern, '\\'));
         };
     }
 

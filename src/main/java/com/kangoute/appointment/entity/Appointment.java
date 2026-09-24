@@ -36,6 +36,21 @@ public class Appointment {
     @Column(nullable = false)
     private String reason;
 
+    @Column(length = 80)
+    private String contactFirstName;
+
+    @Column(length = 80)
+    private String contactLastName;
+
+    @Column(length = 254)
+    private String contactEmail;
+
+    @Column(unique = true, length = 40)
+    private String publicReference;
+
+    @Column(unique = true, length = 64)
+    private String verificationToken;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private AppointmentStatus status;

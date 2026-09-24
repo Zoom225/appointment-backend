@@ -10,8 +10,15 @@ import org.springframework.data.repository.query.Param;
 import java.time.LocalDateTime;
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 
 public interface AppointmentRepository extends JpaRepository<Appointment, Long>, JpaSpecificationExecutor<Appointment> {
+
+    Optional<Appointment> findByPublicReference(String publicReference);
+
+    Optional<Appointment> findByVerificationToken(String verificationToken);
+
+    boolean existsByPublicReference(String publicReference);
 
     @Query(value = "select id from appointment_booking_lock where id = 1 for update", nativeQuery = true)
     Long lockBookingCalendar();

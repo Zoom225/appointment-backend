@@ -13,6 +13,20 @@ public class AppointmentResponse {
     private AppointmentStatus status;
     private Long userId;
 
+    private String publicReference;
+    private String contactFirstName;
+    private String contactLastName;
+    private String contactEmail;
+
+    public String getPublicReference() { return publicReference; }
+    public void setPublicReference(String publicReference) { this.publicReference = publicReference; }
+    public String getContactFirstName() { return contactFirstName; }
+    public void setContactFirstName(String contactFirstName) { this.contactFirstName = contactFirstName; }
+    public String getContactLastName() { return contactLastName; }
+    public void setContactLastName(String contactLastName) { this.contactLastName = contactLastName; }
+    public String getContactEmail() { return contactEmail; }
+    public void setContactEmail(String contactEmail) { this.contactEmail = contactEmail; }
+
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 
