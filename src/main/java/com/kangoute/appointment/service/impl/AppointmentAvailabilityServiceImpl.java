@@ -9,11 +9,11 @@ import com.kangoute.appointment.repository.AppointmentRepository;
 import com.kangoute.appointment.service.AppointmentAvailabilityService;
 import com.kangoute.appointment.service.UserService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
-import java.time.DayOfWeek;
 import java.time.Duration;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -23,6 +23,7 @@ import java.util.List;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 @Transactional(readOnly = true)
 public class AppointmentAvailabilityServiceImpl implements AppointmentAvailabilityService {
 
@@ -66,12 +67,17 @@ public class AppointmentAvailabilityServiceImpl implements AppointmentAvailabili
             throw new AppointmentOutsideAvailabilityException("La duree du creneau doit etre superieure a zero");
         }
 
+        LocalDateTime windowStart = date.atTime(properties.getWorkdayStart());
+        LocalDateTime windowEnd = date.atTime(properties.getWorkdayEnd());
+        LocalDateTime now = LocalDateTime.now(clock);
+        log.debug("Availability configuration date={} workingDays={} windowStart={} windowEnd={} slotMinutes={} now={} zone={}",
+                date, properties.getWorkingDays(), windowStart, windowEnd, properties.getSlotMinutes(), now, clock.getZone());
         if (!properties.getWorkingDays().contains(date.getDayOfWeek())) {
+            log.info("Availability date={} windowStart={} windowEnd={} generatedSlots=0 reason=NON_WORKING_DAY",
+                    date, windowStart, windowEnd);
             return List.of();
         }
 
-        LocalDateTime windowStart = date.atTime(properties.getWorkdayStart());
-        LocalDateTime windowEnd = date.atTime(properties.getWorkdayEnd());
         Duration slotDuration = Duration.ofMinutes(properties.getSlotMinutes());
 
         List<Appointment> appointments = appointmentRepository
@@ -81,9 +87,18 @@ public class AppointmentAvailabilityServiceImpl implements AppointmentAvailabili
                 .sorted(Comparator.comparing(Appointment::getStartDateTime))
                 .toList();
 
+        if (log.isDebugEnabled()) {
+            appointments.forEach(appointment -> log.debug("Availability blocker date={} status={} start={} end={}",
+                    date, appointment.getStatus(), appointment.getStartDateTime(), appointment.getEndDateTime()));
+        }
+
         List<AppointmentAvailabilitySlotResponse> slots = new java.util.ArrayList<>();
         LocalDateTime currentStart = windowStart;
+        int candidateSlots = 0;
+        int busySlots = 0;
+        int elapsedSlots = 0;
         while (!currentStart.plus(slotDuration).isAfter(windowEnd)) {
+            candidateSlots++;
             final LocalDateTime slotStart = currentStart;
             final LocalDateTime slotEnd = currentStart.plus(slotDuration);
             boolean busy = appointments.stream().anyMatch(appointment ->
@@ -91,7 +106,11 @@ public class AppointmentAvailabilityServiceImpl implements AppointmentAvailabili
                             && slotEnd.isAfter(appointment.getStartDateTime())
             );
 
-            if (!busy && slotStart.isAfter(LocalDateTime.now(clock))) {
+            if (busy) {
+                busySlots++;
+            } else if (!slotStart.isAfter(now)) {
+                elapsedSlots++;
+            } else {
                 AppointmentAvailabilitySlotResponse slot = new AppointmentAvailabilitySlotResponse();
                 slot.setStartDateTime(slotStart);
                 slot.setEndDateTime(slotEnd);
@@ -101,6 +120,9 @@ public class AppointmentAvailabilityServiceImpl implements AppointmentAvailabili
             currentStart = currentStart.plus(slotDuration);
         }
 
+        log.info("Availability date={} windowStart={} windowEnd={} now={} zone={} activeAppointments={} candidateSlots={} busySlots={} elapsedSlots={} generatedSlots={}",
+                date, windowStart, windowEnd, now, clock.getZone(), appointments.size(), candidateSlots,
+                busySlots, elapsedSlots, slots.size());
         return slots;
     }
 }
