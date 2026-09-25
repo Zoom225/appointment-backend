@@ -23,6 +23,21 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class EnvironmentProfilesTests {
 
+    @Test
+    void productionAvailabilityBindsExpectedWorkingCalendar() {
+        production(variables()).run(context -> {
+            assertThat(context).hasNotFailed();
+            var availability = Binder.get(context.getEnvironment()).bind("appointment.availability",
+                    com.kangoute.appointment.config.AppointmentAvailabilityProperties.class).get();
+            assertThat(availability.getWorkdayStart()).isEqualTo(java.time.LocalTime.of(9, 0));
+            assertThat(availability.getWorkdayEnd()).isEqualTo(java.time.LocalTime.of(18, 0));
+            assertThat(availability.getSlotMinutes()).isEqualTo(30);
+            assertThat(availability.getWorkingDays()).containsExactly(java.time.DayOfWeek.MONDAY,
+                    java.time.DayOfWeek.TUESDAY, java.time.DayOfWeek.WEDNESDAY,
+                    java.time.DayOfWeek.THURSDAY, java.time.DayOfWeek.FRIDAY);
+        });
+    }
+
     private final ApplicationContextRunner runner = new ApplicationContextRunner()
             .withInitializer(context -> {
                 // Read the real main profile files without inheriting workstation credentials
