@@ -265,8 +265,9 @@ Le backend applique notamment les règles suivantes :
 - les données sensibles ne sont pas exposées directement à travers les entités JPA ;
 - les erreurs métier sont converties en réponses HTTP adaptées.
 
-Le workflow conserve la validation ADMIN : `PENDING → CONFIRMED → COMPLETED`,
-avec annulation possible tant que le rendez-vous est actif. L'identité de réservation
+Une réservation sur un créneau disponible est immédiatement `CONFIRMED`, sans approbation ADMIN,
+puis un email avec QR public est envoyé après commit à `contactEmail`. L'ADMIN peut clôturer (`COMPLETED`)
+ou annuler un rendez-vous actif. L'identité de réservation
 vient du JWT. Les détails des endpoints, transitions, notifications et verrous sont
 documentés dans [Réservation et gestion des rendez-vous](docs/appointment-booking.md).
 

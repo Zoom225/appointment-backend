@@ -151,7 +151,7 @@ Pourquoi :
 - il faut une couche complete pour creer, lire et lister les rendez-vous
 
 Regles appliquees :
-- `PENDING` est le statut par defaut
+- `CONFIRMED` est le statut initial ; email et QR apres commit, sans approbation admin
 - un rendez-vous appartient a un utilisateur
 
 ### 8. Regles metier des rendez-vous
@@ -179,7 +179,7 @@ Pourquoi :
 Effet concret :
 - `startDateTime` doit etre strictement avant `endDateTime`
 - un rendez-vous conflictuel est refuse
-- le statut `PENDING` reste la valeur par defaut a la creation
+- le statut `CONFIRMED` est force a la creation ; `PENDING` reste disponible pour les donnees historiques
 
 ### 9. Guide de travail
 

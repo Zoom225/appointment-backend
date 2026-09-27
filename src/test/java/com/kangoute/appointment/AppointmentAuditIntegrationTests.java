@@ -35,6 +35,9 @@ class AppointmentAuditIntegrationTests {
     private AppointmentService appointmentService;
 
     @Autowired
+    private com.kangoute.appointment.repository.AppointmentRepository appointmentRepository;
+
+    @Autowired
     private AdminAppointmentController adminAppointmentController;
 
     @Autowired
@@ -64,6 +67,9 @@ class AppointmentAuditIntegrationTests {
         updateRequest.setEndDateTime(date.atTime(10, 30));
         appointmentService.updateAppointment(created.getId(), toAppointment(updateRequest, owner));
         authenticateAs(adminUser());
+        // Exercise the retained confirmation transition on an explicit legacy fixture.
+        created.setStatus(AppointmentStatus.PENDING);
+        appointmentRepository.saveAndFlush(created);
         appointmentService.updateStatus(created.getId(), AppointmentStatus.CONFIRMED);
         authenticateAs(owner);
         appointmentService.cancelAppointment(created.getId());

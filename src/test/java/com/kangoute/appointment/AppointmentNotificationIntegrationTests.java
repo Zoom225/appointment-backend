@@ -41,6 +41,9 @@ class AppointmentNotificationIntegrationTests {
     private AppointmentService appointmentService;
 
     @Autowired
+    private com.kangoute.appointment.repository.AppointmentRepository appointmentRepository;
+
+    @Autowired
     private AppointmentNotificationService appointmentNotificationService;
 
     @Autowired
@@ -85,6 +88,9 @@ class AppointmentNotificationIntegrationTests {
         appointmentService.updateAppointment(appointment.getId(), toAppointment(owner, updateRequest));
 
         authenticateAs(adminUser());
+        // Exercise the retained confirmation notification for historical PENDING data.
+        appointment.setStatus(AppointmentStatus.PENDING);
+        appointmentRepository.saveAndFlush(appointment);
         adminAppointmentController.updateStatus(appointment.getId(), statusRequest(AppointmentStatus.CONFIRMED));
 
         authenticateAs(owner);

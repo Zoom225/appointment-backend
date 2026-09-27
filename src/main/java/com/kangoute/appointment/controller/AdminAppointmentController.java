@@ -56,7 +56,7 @@ public class AdminAppointmentController {
     }
 
     @PatchMapping("/{id}/status")
-    @Operation(summary = "Confirmer, terminer ou annuler un rendez-vous", description = "Les transitions incohérentes sont refusées avec HTTP 409.")
+    @Operation(summary = "Terminer, annuler ou confirmer un ancien rendez-vous", description = "Les transitions incohérentes sont refusées avec HTTP 409.")
     public AppointmentResponse updateStatus(
             @PathVariable Long id,
             @Valid @RequestBody AppointmentStatusUpdateRequest request

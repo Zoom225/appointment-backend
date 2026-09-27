@@ -49,7 +49,7 @@ public class AppointmentController {
     private final DemoAdminAccess demoAdminAccess;
 
     @PostMapping
-    @Operation(summary = "Réserver un rendez-vous en attente de confirmation", description = "L'utilisateur est déterminé par le JWT. Un seul rendez-vous actif futur est autorisé.")
+    @Operation(summary = "Réserver un rendez-vous confirmé immédiatement", description = "L'utilisateur est déterminé par le JWT. Un seul rendez-vous actif futur est autorisé.")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public AppointmentResponse createAppointment(@Valid @RequestBody AppointmentCreateRequest request) {

@@ -221,7 +221,7 @@ class DemoDataInitializerEnabledTests {
                                 "startDateTime", start, "endDateTime", end, "reason", "Portfolio demo",
                                 "contactFirstName", "Demo", "contactLastName", "Utilisateur", "contactEmail", "contact@example.com"))))
                 .andExpect(MockMvcResultMatchers.status().isCreated())
-                .andExpect(MockMvcResultMatchers.jsonPath("$.status").value("PENDING"));
+                .andExpect(MockMvcResultMatchers.jsonPath("$.status").value("CONFIRMED"));
         mockMvc.perform(MockMvcRequestBuilders.get("/api/admin/notifications")
                         .header("Authorization", "Bearer " + adminToken))
                 .andExpect(MockMvcResultMatchers.status().isOk())
@@ -434,6 +434,12 @@ class DemoDataInitializerEnabledTests {
                 || day.getDayOfWeek() == java.time.DayOfWeek.SUNDAY) day = day.plusDays(1);
         long demoId = book(demoUserToken, day, 10);
         long realId = book(realUserToken, day, 11);
+        // Explicit legacy fixtures keep historical confirmation access checks covered.
+        for (long id : new long[]{demoId, realId}) {
+            Appointment historical = appointmentRepository.findById(id).orElseThrow();
+            historical.setStatus(com.kangoute.appointment.enums.AppointmentStatus.PENDING);
+            appointmentRepository.saveAndFlush(historical);
+        }
         return new Fixture(demoUserToken, demoAdminToken, realAdminToken, realUser.getId(), demoId, realId);
     }
 

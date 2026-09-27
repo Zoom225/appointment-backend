@@ -46,6 +46,9 @@ class AppointmentStatusPatchIntegrationTests {
     private AppointmentService appointmentService;
 
     @Autowired
+    private com.kangoute.appointment.repository.AppointmentRepository appointmentRepository;
+
+    @Autowired
     private WebApplicationContext webApplicationContext;
 
     private MockMvc mockMvc;
@@ -371,7 +374,9 @@ class AppointmentStatusPatchIntegrationTests {
                 .reason("Consultation")
                 .build();
 
-        return appointmentService.createAppointment(appointment).getId();
+        // Legacy PENDING fixture for the historical transition tests.
+        appointment.setStatus(com.kangoute.appointment.enums.AppointmentStatus.PENDING);
+        return appointmentRepository.saveAndFlush(appointment).getId();
     }
 
     private LocalDate nextWorkingDate() {

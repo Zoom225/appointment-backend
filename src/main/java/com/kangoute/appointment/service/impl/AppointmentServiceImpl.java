@@ -22,6 +22,7 @@ import com.kangoute.appointment.service.AppointmentMailService;
 import com.kangoute.appointment.service.UserService;
 import jakarta.persistence.EntityManager;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -39,6 +40,7 @@ import java.util.Locale;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 @Transactional
 public class AppointmentServiceImpl implements AppointmentService {
 
@@ -84,7 +86,7 @@ public class AppointmentServiceImpl implements AppointmentService {
         if (appointment.getVerificationToken() == null) {
             appointment.setVerificationToken(referenceService.generateVerificationToken());
         }
-        appointment.setStatus(AppointmentStatus.PENDING);
+        appointment.setStatus(AppointmentStatus.CONFIRMED);
         Appointment saved = appointmentRepository.saveAndFlush(appointment);
         appointmentAuditService.record(saved, AppointmentAuditAction.CREATED, buildCreatedDetails(saved));
         appointmentNotificationService.notifyAppointmentEvent(
@@ -93,6 +95,7 @@ public class AppointmentServiceImpl implements AppointmentService {
                 currentUserService.getCurrentUserEmailOrSystem()
         );
         mailService.schedule(saved);
+        log.info("Appointment confirmed on creation reference={}", saved.getPublicReference());
         return saved;
     }
 

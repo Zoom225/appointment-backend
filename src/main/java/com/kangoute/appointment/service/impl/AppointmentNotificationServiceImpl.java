@@ -90,7 +90,7 @@ public class AppointmentNotificationServiceImpl implements AppointmentNotificati
                             .title("Nouveau rendez-vous")
                             .message(appointment.getPublicReference() + " — "
                                     + appointment.getContactFirstName() + " " + appointment.getContactLastName()
-                                    + " (" + appointment.getContactEmail() + ") a demandé un rendez-vous pour le "
+                                    + " (" + appointment.getContactEmail() + ") a réservé un rendez-vous confirmé pour le "
                                     + appointment.getStartDateTime().format(DateTimeFormatter.ofPattern("dd/MM/yyyy 'à' HH:mm"))
                                     + ". Motif : " + appointment.getReason())
                             .createdAt(LocalDateTime.now())
@@ -195,7 +195,7 @@ public class AppointmentNotificationServiceImpl implements AppointmentNotificati
 
     private String buildTitle(AppointmentNotificationType type) {
         return switch (type) {
-            case CREATED -> "Demande de rendez-vous enregistrée";
+            case CREATED -> "Rendez-vous confirmé";
             case UPDATED -> "Rendez-vous modifie";
             case CANCELLED -> "Rendez-vous annule";
             case STATUS_CHANGED -> "Statut du rendez-vous modifie";
@@ -206,7 +206,7 @@ public class AppointmentNotificationServiceImpl implements AppointmentNotificati
     private String buildMessage(AppointmentNotificationType type, Appointment appointment, String actorEmail) {
         String date = appointment.getStartDateTime().format(DateTimeFormatter.ofPattern("dd/MM/yyyy 'à' HH:mm"));
         return switch (type) {
-            case CREATED -> "Votre rendez-vous du " + date + " est en attente de confirmation.";
+            case CREATED -> "Votre rendez-vous du " + date + " est confirmé.";
             case UPDATED -> "Rendez-vous modifie par " + actorEmail;
             case CANCELLED -> "Votre rendez-vous a été annulé.";
             case STATUS_CHANGED -> appointment.getStatus() == AppointmentStatus.CONFIRMED
