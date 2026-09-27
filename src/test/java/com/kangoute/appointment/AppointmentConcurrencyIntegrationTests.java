@@ -88,6 +88,7 @@ class AppointmentConcurrencyIntegrationTests {
             assertNotEquals(a.get(15, TimeUnit.SECONDS), b.get(15, TimeUnit.SECONDS));
         }
         assertEquals(1, appointments.count());
+        assertEquals(com.kangoute.appointment.enums.AppointmentStatus.CONFIRMED, appointments.findAll().getFirst().getStatus());
         assertEquals(1, audits.count());
         assertEquals(1, notifications.count());
     }

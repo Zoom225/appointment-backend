@@ -11,14 +11,17 @@ JWT, les notifications persistantes et les endpoints existants.
 {
   "startDateTime": "2030-01-08T10:00:00",
   "endDateTime": "2030-01-08T10:30:00",
-  "reason": "Consultation"
+  "reason": "Consultation",
+  "contactFirstName": "Jean",
+  "contactLastName": "Dupont",
+  "contactEmail": "reservation@example.com"
 }
 ```
 
 Choisir une date future réelle à partir des disponibilités. Le backend utilise
 l'identité JWT. L'ancien champ `userId` reste facultatif pour compatibilité :
 un USER peut uniquement fournir son propre identifiant ; un ADMIN peut réserver
-pour un autre utilisateur. Le statut initial est toujours `PENDING`.
+pour un autre utilisateur. Le statut initial est toujours `CONFIRMED`, sans approbation admin. L'email de confirmation avec QR est envoyé à `contactEmail` après commit.
 
 La date doit être strictement future. Les jours et horaires configurés sont
 respectés. Le début s'aligne sur la grille depuis l'ouverture ; la durée doit être
@@ -62,7 +65,7 @@ Toutes les routes `/api/admin/...` nécessitent `ROLE_ADMIN`.
 |---|---|
 | `GET /api/admin/appointments` | Tous les rendez-vous ; `page`, `size`, `sort`, `userId`, `status`, `startFrom`, `startTo`, `query` |
 | `GET /api/admin/appointments/{id}` | Détail |
-| `PATCH /api/admin/appointments/{id}/status` | Confirmer, terminer ou annuler |
+| `PATCH /api/admin/appointments/{id}/status` | Terminer, annuler ; confirmer uniquement les anciennes réservations |
 | `GET /api/admin/appointments/{id}/history` | Audit existant des actions et acteurs |
 | `GET /api/admin/statistics` | Statistiques existantes enrichies |
 | `GET /api/admin/users` | Utilisateurs avec pagination et filtres existants |
@@ -74,7 +77,7 @@ Le dashboard conserve ses anciens champs et ajoute `todayAppointments`,
 `upcomingAppointments` (actifs futurs) et `completedAppointments`. Les totaux sont
 calculés par des requêtes SQL de comptage, sans chargement intégral des entités.
 
-Transitions : `PENDING → CONFIRMED/CANCELLED`, `CONFIRMED → COMPLETED/CANCELLED`.
+Nouvelles réservations : `CONFIRMED → COMPLETED/CANCELLED`. Les transitions depuis `PENDING` concernent uniquement les données historiques.
 Pour compatibilité : `PENDING → SCHEDULED → CONFIRMED/CANCELLED`.
 Les états terminaux ne sont ni réouverts, ni modifiés, ni annulés une deuxième fois.
 Une transition incohérente retourne `409`. Un USER ne peut plus confirmer ou terminer
@@ -82,8 +85,8 @@ lui-même un rendez-vous, y compris via l'ancienne route PATCH.
 
 ## Notifications et historique
 
-Création : notification de demande en attente. Confirmation ADMIN : titre
-« Rendez-vous confirmé » et message contenant la date réelle du rendez-vous.
+Création : notification « Rendez-vous confirmé » avec la date réelle du rendez-vous.
+La notification admin « Nouveau rendez-vous » est informative, sans approbation demandée.
 Annulation : « Votre rendez-vous a été annulé. » Les types de notifications
 existants restent inchangés. L'écriture du rendez-vous, de l'audit et de sa notification
 partage la même transaction. Les rappels excluent les rendez-vous terminés/annulés.

@@ -56,6 +56,6 @@ class AppointmentReferenceAndMailTests {
 
     private AppointmentMailService.MailEvent event() {
         return new AppointmentMailService.MailEvent("contact@example.com", "Jean", "RDV-test", "A".repeat(43),
-                LocalDateTime.of(2030, 1, 8, 10, 0), "Consultation", AppointmentStatus.PENDING);
+                LocalDateTime.of(2030, 1, 8, 10, 0), LocalDateTime.of(2030, 1, 8, 10, 30), "Consultation", AppointmentStatus.CONFIRMED);
     }
 }

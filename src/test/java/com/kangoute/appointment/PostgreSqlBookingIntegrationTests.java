@@ -68,6 +68,40 @@ class PostgreSqlBookingIntegrationTests {
     @Autowired AppointmentAuditRepository audits;
     @Autowired AppointmentNotificationRepository notifications;
     @Autowired PlatformTransactionManager transactionManager;
+    @Autowired org.springframework.web.context.WebApplicationContext context;
+    @Autowired com.kangoute.appointment.security.JwtService jwt;
+
+    @Test
+    void simultaneousHttpBookingsReturnCreatedAndConflictWithOneConfirmedRow() throws Exception {
+        var mvc = org.springframework.test.web.servlet.setup.MockMvcBuilders.webAppContextSetup(context)
+                .apply(org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity()).build();
+        User first = user("pg-http-first@example.com");
+        User second = user("pg-http-second@example.com");
+        String firstToken = jwt.generateToken(first);
+        String secondToken = jwt.generateToken(second);
+        LocalDateTime start = AppointmentTestDates.nextWorkingDate().atTime(10, 0);
+        String payload = """
+                {"contactFirstName":"Test","contactLastName":"User","contactEmail":"reservation@example.com",
+                 "startDateTime":"%s","endDateTime":"%s","reason":"Concurrent HTTP booking"}
+                """.formatted(start, start.plusMinutes(30));
+        var barrier = new CyclicBarrier(2);
+        try (var executor = Executors.newFixedThreadPool(2)) {
+            java.util.List<Future<Integer>> attempts = new java.util.ArrayList<>();
+            for (String token : java.util.List.of(firstToken, secondToken)) {
+                attempts.add(executor.submit(() -> {
+                    barrier.await(5, TimeUnit.SECONDS);
+                    return mvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/api/appointments")
+                                    .header("Authorization", "Bearer " + token)
+                                    .contentType(org.springframework.http.MediaType.APPLICATION_JSON).content(payload))
+                            .andReturn().getResponse().getStatus();
+                }));
+            }
+            var statuses = java.util.List.of(attempts.get(0).get(20, TimeUnit.SECONDS), attempts.get(1).get(20, TimeUnit.SECONDS));
+            assertEquals(java.util.List.of(201, 409), statuses.stream().sorted().toList());
+        }
+        assertEquals(1, appointments.count());
+        assertEquals(AppointmentStatus.CONFIRMED, appointments.findAll().getFirst().getStatus());
+    }
 
     @AfterEach
     void cleanUp() {
@@ -167,6 +201,7 @@ class PostgreSqlBookingIntegrationTests {
             assertNotEquals(a.get(15, TimeUnit.SECONDS), b.get(15, TimeUnit.SECONDS));
         }
         assertEquals(1, appointments.count());
+        assertEquals(AppointmentStatus.CONFIRMED, appointments.findAll().getFirst().getStatus());
         assertEquals(1, audits.count());
         assertEquals(1, notifications.count());
     }

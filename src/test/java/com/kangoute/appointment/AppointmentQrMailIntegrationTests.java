@@ -5,6 +5,7 @@ import com.google.zxing.MultiFormatReader;
 import com.google.zxing.client.j2se.BufferedImageLuminanceSource;
 import com.google.zxing.common.HybridBinarizer;
 import com.kangoute.appointment.entity.User;
+import com.kangoute.appointment.enums.AppointmentStatus;
 import com.kangoute.appointment.enums.RoleName;
 import com.kangoute.appointment.repository.*;
 import com.kangoute.appointment.security.JwtService;
@@ -63,6 +64,7 @@ class AppointmentQrMailIntegrationTests {
     @Autowired JwtService jwt;
     @Autowired ObjectMapper json;
     @Autowired org.springframework.transaction.PlatformTransactionManager transactionManager;
+    @Autowired AppointmentMailService mailService;
     @MockitoBean JavaMailSender sender;
     @MockitoBean Clock clock;
     private MockMvc mvc;
@@ -94,9 +96,9 @@ class AppointmentQrMailIntegrationTests {
     }
 
     @Test
-    void committedBookingSendsPendingEmailToContactWithReferenceAndScannableQr() throws Exception {
+    void committedBookingSendsConfirmationEmailToContactWithReferenceAndScannableQr() throws Exception {
         book(payload()).andExpect(status().isCreated())
-                .andExpect(jsonPath("$.status").value("PENDING"))
+                .andExpect(jsonPath("$.status").value("CONFIRMED"))
                 .andExpect(jsonPath("$.contactFirstName").value("Jean"))
                 .andExpect(jsonPath("$.contactLastName").value("Dupont"))
                 .andExpect(jsonPath("$.contactEmail").value("contact@example.com"))
@@ -106,10 +108,14 @@ class AppointmentQrMailIntegrationTests {
         assertEquals("Original", userRepository.findById(owner.getId()).orElseThrow().getFirstName());
         verify(sender).send(any(MimeMessage.class));
         assertEquals("contact@example.com", sent.getAllRecipients()[0].toString());
-        assertTrue(sent.getSubject().startsWith("Demande de rendez-vous enregistrée"));
+        assertEquals(AppointmentStatus.CONFIRMED, appointment.getStatus());
+        assertEquals("appointments@example.com", sent.getFrom()[0].toString());
+        assertTrue(sent.getSubject().startsWith("Votre rendez-vous est confirmé"));
         String html = html(sent);
-        assertTrue(html.contains("En attente de confirmation"));
-        assertFalse(html.contains("Votre rendez-vous est confirmé"));
+        assertFalse(html.contains("En attente"));
+        for (String detail : new String[]{"Jean", "08/01/2030", "10:00", "10:30", "Consultation", "Confirmé", "Votre rendez-vous est confirmé"}) {
+            assertTrue(html.contains(detail), detail);
+        }
         assertTrue(html.contains(appointment.getPublicReference()));
         assertTrue(html.contains("cid:appointmentQr"));
         byte[] png = png(sent);
@@ -133,7 +139,7 @@ class AppointmentQrMailIntegrationTests {
                 .andExpect(jsonPath("$.contactFirstName").value("Jean"))
                 .andExpect(jsonPath("$.contactLastName").value("Dupont"))
                 .andExpect(jsonPath("$.reason").value("Consultation"))
-                .andExpect(jsonPath("$.status").value("PENDING"))
+                .andExpect(jsonPath("$.status").value("CONFIRMED"))
                 .andExpect(jsonPath("$.contactEmail").doesNotExist())
                 .andExpect(jsonPath("$.id").doesNotExist())
                 .andExpect(jsonPath("$.userId").doesNotExist())
@@ -163,6 +169,7 @@ class AppointmentQrMailIntegrationTests {
         doThrow(new MailSendException("Simulated SMTP failure")).when(sender).send(any(MimeMessage.class));
         book(payload()).andExpect(status().isCreated());
         assertEquals(1, appointments.count());
+        assertEquals(AppointmentStatus.CONFIRMED, appointments.findAll().getFirst().getStatus());
         assertEquals(1, audits.count());
         assertEquals(1, notifications.findByRecipientIdOrderByCreatedAtDesc(owner.getId()).size());
     }
@@ -171,6 +178,9 @@ class AppointmentQrMailIntegrationTests {
     void adminConfirmationAndCancellationSendCorrectEmailsAndKeepSameVerificationLink() throws Exception {
         book(payload()).andExpect(status().isCreated());
         var appointment = appointments.findAll().getFirst();
+        // Explicit legacy fixture: new reservations no longer need this transition.
+        appointment.setStatus(AppointmentStatus.PENDING);
+        appointments.saveAndFlush(appointment);
         for (String state : new String[]{"CONFIRMED", "CANCELLED"}) {
             sent = new MimeMessage(Session.getInstance(new Properties()));
             when(sender.createMimeMessage()).thenReturn(sent);
@@ -178,7 +188,7 @@ class AppointmentQrMailIntegrationTests {
                             .header("Authorization", bearer(admin)).contentType(MediaType.APPLICATION_JSON)
                             .content("{\"status\":\"" + state + "\"}"))
                     .andExpect(status().isOk()).andExpect(jsonPath("$.status").value(state));
-            assertTrue(sent.getSubject().startsWith(state.equals("CONFIRMED") ? "Rendez-vous confirmé" : "Rendez-vous annulé"));
+            assertTrue(sent.getSubject().startsWith(state.equals("CONFIRMED") ? "Votre rendez-vous est confirmé" : "Rendez-vous annulé"));
             assertTrue(html(sent).contains(appointment.getVerificationToken()));
             mvc.perform(get("/api/public/appointments/verify").param("token", appointment.getVerificationToken()))
                     .andExpect(status().isOk()).andExpect(jsonPath("$.status").value(state));
@@ -220,6 +230,7 @@ class AppointmentQrMailIntegrationTests {
         new org.springframework.transaction.support.TransactionTemplate(transactionManager).executeWithoutResult(transaction -> {
             try {
                 book(payload()).andExpect(status().isCreated());
+                verify(sender, never()).send(any(MimeMessage.class));
             } catch (Exception exception) {
                 throw new AssertionError(exception);
             }
@@ -236,6 +247,53 @@ class AppointmentQrMailIntegrationTests {
             body.put(field, "A".repeat(81));
             book(body).andExpect(status().isBadRequest());
         }
+    }
+
+    @Test
+    void mailScheduledWithoutTransactionIsSentExactlyOnce() throws Exception {
+        var appointment = com.kangoute.appointment.entity.Appointment.builder()
+                .contactFirstName("Jean").contactEmail("reservation@example.com")
+                .publicReference("RDV-test").verificationToken("A".repeat(43))
+                .startDateTime(java.time.LocalDateTime.of(2030, 1, 8, 10, 0))
+                .endDateTime(java.time.LocalDateTime.of(2030, 1, 8, 10, 30))
+                .reason("Consultation").status(AppointmentStatus.CONFIRMED).build();
+        mailService.schedule(appointment);
+        verify(sender, times(1)).send(any(MimeMessage.class));
+        assertEquals("reservation@example.com", sent.getAllRecipients()[0].toString());
+    }
+
+    @ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings = {"CANCELLED", "COMPLETED"})
+    void availableSlotIsConfirmedThenReleasedAndPublicLinkRemainsStable(String finalStatus) throws Exception {
+        var available = mvc.perform(get("/api/appointments/availability").param("date", "2030-01-08")
+                        .header("Authorization", bearer(owner)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(18))
+                .andReturn().getResponse().getContentAsString();
+        var slot = json.readTree(available).get(0);
+        var body = payload();
+        body.put("startDateTime", slot.get("startDateTime").asText());
+        body.put("endDateTime", slot.get("endDateTime").asText());
+        body.put("status", "PENDING"); // An untrusted field cannot choose the server's status.
+        book(body).andExpect(status().isCreated()).andExpect(jsonPath("$.status").value("CONFIRMED"));
+        var appointment = appointments.findAll().getFirst();
+        mvc.perform(get("/api/appointments/availability").param("date", "2030-01-08")
+                        .header("Authorization", bearer(owner)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(17))
+                .andExpect(jsonPath("$[0].startDateTime").value("2030-01-08T09:30:00"));
+        mvc.perform(patch("/api/admin/appointments/{id}/status", appointment.getId())
+                        .header("Authorization", bearer(admin)).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"" + finalStatus + "\"}"))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.status").value(finalStatus));
+        var updated = appointments.findById(appointment.getId()).orElseThrow();
+        assertEquals(appointment.getVerificationToken(), updated.getVerificationToken());
+        assertEquals(appointment.getPublicReference(), updated.getPublicReference());
+        mvc.perform(get("/api/public/appointments/verify").param("token", appointment.getVerificationToken()))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.status").value(finalStatus));
+        mvc.perform(get("/api/appointments/availability").param("date", "2030-01-08")
+                        .header("Authorization", bearer(owner)))
+                .andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(18))
+                .andExpect(jsonPath("$[0].startDateTime").value("2030-01-08T09:00:00"));
+        verify(sender, times(finalStatus.equals("CANCELLED") ? 2 : 1)).send(any(MimeMessage.class));
     }
 
     private Map<String, String> payload() {

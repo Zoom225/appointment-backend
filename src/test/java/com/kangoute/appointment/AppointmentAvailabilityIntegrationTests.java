@@ -71,7 +71,7 @@ class AppointmentAvailabilityIntegrationTests {
     }
 
     @Test
-    void createAppointmentWithinWorkingHoursSavesPendingAppointment() {
+    void createAppointmentWithinWorkingHoursSavesConfirmedAppointment() {
         User user = createUser("valid.hours@example.com");
         LocalDate date = AppointmentTestDates.nextWorkingDate();
 
@@ -84,7 +84,7 @@ class AppointmentAvailabilityIntegrationTests {
 
         Appointment saved = appointmentService.createAppointment(appointment);
 
-        assertEquals(AppointmentStatus.PENDING, saved.getStatus());
+        assertEquals(AppointmentStatus.CONFIRMED, saved.getStatus());
         assertEquals(date.atTime(9, 0), saved.getStartDateTime());
     }
 

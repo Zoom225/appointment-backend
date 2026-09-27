@@ -64,10 +64,10 @@ class AppointmentBookingIntegrationTests {
     }
 
     @Test
-    void bookingUsesJwtIdentityAndCreatesPendingNotificationAndTimestamps() throws Exception {
+    void bookingUsesJwtIdentityAndCreatesConfirmedNotificationAndTimestamps() throws Exception {
         book(owner, START).andExpect(status().isCreated())
                 .andExpect(jsonPath("$.userId").value(owner.getId()))
-                .andExpect(jsonPath("$.status").value("PENDING"))
+                .andExpect(jsonPath("$.status").value("CONFIRMED"))
                 .andExpect(jsonPath("$.startDateTime").value("2030-01-08T10:00:00"))
                 .andExpect(jsonPath("$.createdAt").isNotEmpty())
                 .andExpect(jsonPath("$.updatedAt").isNotEmpty())
@@ -75,7 +75,7 @@ class AppointmentBookingIntegrationTests {
         var messages = notifications.findByRecipientIdOrderByCreatedAtDesc(owner.getId());
         assertEquals(1, messages.size());
         assertTrue(messages.getFirst().getMessage().contains("08/01/2030 à 10:00"));
-        assertTrue(messages.getFirst().getMessage().contains("en attente"));
+        assertTrue(messages.getFirst().getMessage().contains("est confirmé"));
     }
 
     @ParameterizedTest

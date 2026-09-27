@@ -17,7 +17,7 @@
 
 Les noms sont nettoyés avec `trim` et contiennent entre 2 et 80 caractères. L'email est nettoyé, mis en minuscules et limité à 254 caractères. Ces champs sont un snapshot du rendez-vous : le profil utilisateur n'est pas modifié. Le client utilisateur n'a pas besoin d'envoyer `userId`. La compatibilité de l'option administrative existante est conservée avec ses contrôles d'accès.
 
-Le statut initial reste `PENDING`. La règle du rendez-vous actif unique, les disponibilités, le verrou transactionnel, les transitions et les restrictions DEMO restent appliqués. La réponse et les listes admin ajoutent `publicReference` et les coordonnées de contact, sans token. La recherche admin inclut la référence et les champs de contact ; elle reste limitée aux données démo pour le DEMO ADMIN.
+Le statut initial est forcé à `CONFIRMED`. Aucune approbation ADMIN n'est nécessaire. `PENDING` et `SCHEDULED` restent disponibles pour les données historiques ; leur confirmation reste possible. La règle du rendez-vous actif unique, les disponibilités, le verrou transactionnel, les transitions et les restrictions DEMO restent appliqués. La réponse et les listes admin ajoutent `publicReference` et les coordonnées de contact, sans token. La recherche admin inclut la référence et les champs de contact ; elle reste limitée aux données démo pour le DEMO ADMIN.
 
 ## Référence, migration et vérification
 
@@ -53,18 +53,18 @@ Configurer les variables suivantes dans l'environnement ; aucun fournisseur SMTP
 | `SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH` | Selon les exigences du fournisseur, généralement `true` |
 | `SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE` | Selon le fournisseur, généralement `true` pour STARTTLS |
 
-Spring Boot lie directement les variables `SPRING_MAIL_*`. Les délais de connexion, lecture et écriture SMTP sont limités à 5 secondes par défaut. Utiliser les réglages TLS exigés par le fournisseur. Aucun secret SMTP ne doit être ajouté au dépôt.
+Spring Boot lie `SPRING_MAIL_HOST`, `SPRING_MAIL_PORT`, `SPRING_MAIL_USERNAME` et `SPRING_MAIL_PASSWORD`. Les deux variables SMTP AUTH/STARTTLS ci-dessus sont explicitement reliées dans `application.properties` (valeur par défaut `true`). Pour Gmail : `SPRING_MAIL_HOST=smtp.gmail.com`, `SPRING_MAIL_PORT=587`, AUTH et STARTTLS à `true`. `APP_MAIL_FROM` doit être le compte `SPRING_MAIL_USERNAME` ou un alias autorisé. Aucun identifiant réel n'est fourni ici. Les délais de connexion, lecture et écriture SMTP sont limités à 5 secondes par défaut. Utiliser les réglages TLS exigés par le fournisseur. Aucun secret SMTP ne doit être ajouté au dépôt.
 
 ## Envoi et notifications
 
-Un événement est publié pendant la transaction ; le mail est envoyé uniquement après son commit. Une transaction annulée n'envoie rien. Une erreur SMTP est interceptée et ne remet pas en cause le rendez-vous enregistré. Le log indique seulement le type d'erreur, sans destinataire ni contenu. Avec `APP_MAIL_ENABLED=false`, la réservation fonctionne et un message générique indique l'absence d'envoi.
+Un événement est publié pendant la transaction ; le mail est envoyé après son commit. Hors transaction, le listener utilise `fallbackExecution=true` pour envoyer directement, une seule fois. Une transaction annulée n'envoie rien. Une erreur SMTP est interceptée et ne remet pas en cause le rendez-vous enregistré. Le log indique seulement le type d'erreur, sans destinataire ni contenu. Avec `APP_MAIL_ENABLED=false`, la réservation fonctionne et un message générique indique l'absence d'envoi.
 
-- Création : « Demande de rendez-vous enregistrée — [référence] », statut « En attente de confirmation ».
-- Confirmation : « Rendez-vous confirmé — [référence] ».
+- Création : « Votre rendez-vous est confirmé — [référence] », statut « Confirmé ».
+- Confirmation historique d'un `PENDING`/`SCHEDULED` : même email de confirmation, même référence et même token.
 - Annulation utilisateur ou admin : « Rendez-vous annulé — [référence] ».
 - `COMPLETED` : aucun email supplémentaire.
 
-Chaque email contient la référence, la date/heure, le motif, le statut, le QR inline CID et un lien cliquable. Les données saisies sont échappées dans le HTML. L'envoi après commit est immédiat et sans file persistante ni relance automatique : une indisponibilité SMTP nécessite une intervention opérationnelle si un renvoi est souhaité.
+Chaque email contient la référence, la date, les heures de début et de fin, le motif, le statut, le QR inline CID et un lien cliquable. Les données saisies sont échappées dans le HTML. L'envoi après commit est immédiat et sans file persistante ni relance automatique : une indisponibilité SMTP nécessite une intervention opérationnelle si un renvoi est souhaité.
 
 La notification utilisateur existante est conservée. Une notification « Nouveau rendez-vous » est adressée aux vrais admins, et au DEMO ADMIN pour les réservations du DEMO USER. Elle contient référence, contact, date/heure et motif. Le DEMO ADMIN ne peut lire que les notifications du rendez-vous démo destinées aux comptes démo ; les destinataires réels ne lui sont pas exposés.
 

@@ -38,19 +38,23 @@ public class AppointmentMailService {
         if (appointment.getStatus() != AppointmentStatus.PENDING
                 && appointment.getStatus() != AppointmentStatus.CONFIRMED
                 && appointment.getStatus() != AppointmentStatus.CANCELLED) return;
+        if (appointment.getStatus() == AppointmentStatus.CONFIRMED) {
+            log.info("Confirmation email scheduled reference={}", appointment.getPublicReference());
+        }
         events.publishEvent(new MailEvent(
                 appointment.getContactEmail(), appointment.getContactFirstName(),
                 appointment.getPublicReference(), appointment.getVerificationToken(),
-                appointment.getStartDateTime(), appointment.getReason(), appointment.getStatus()));
+                appointment.getStartDateTime(), appointment.getEndDateTime(), appointment.getReason(), appointment.getStatus()));
     }
 
-    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT, fallbackExecution = true)
     public void sendAfterCommit(MailEvent event) {
         if (!enabled) {
-            log.info("Appointment email not sent: mail is disabled");
+            log.info("Mail sending disabled reference={}", event.reference());
             return;
         }
         try {
+            log.info("{} email send attempt reference={}", mailKind(event), event.reference());
             JavaMailSender sender = senderProvider.getIfAvailable();
             if (sender == null || from == null || from.isBlank() || frontendUrl == null || frontendUrl.isBlank()) {
                 throw new IllegalStateException("Mail configuration is incomplete");
@@ -59,7 +63,7 @@ public class AppointmentMailService {
                     + "/verify-appointment?token=" + event.token();
             String subject = switch (event.status()) {
                 case PENDING -> "Demande de rendez-vous enregistrée — " + event.reference();
-                case CONFIRMED -> "Rendez-vous confirmé — " + event.reference();
+                case CONFIRMED -> "Votre rendez-vous est confirmé — " + event.reference();
                 case CANCELLED -> "Rendez-vous annulé — " + event.reference();
                 default -> throw new IllegalStateException("Unsupported mail status");
             };
@@ -80,19 +84,28 @@ public class AppointmentMailService {
                     : event.status() == AppointmentStatus.CONFIRMED
                     ? "Votre rendez-vous est confirmé." : "Votre rendez-vous a été annulé.") + "</p>"
                     + "<p>Référence : " + HtmlUtils.htmlEscape(event.reference()) + "<br>Date et heure : "
-                    + event.startDateTime().format(DATE_FORMAT) + "<br>Motif : "
+                    + event.startDateTime().format(DATE_FORMAT) + "<br>Créneau : "
+                    + event.startDateTime().format(DateTimeFormatter.ofPattern("HH:mm")) + " - "
+                    + event.endDateTime().format(DateTimeFormatter.ofPattern("HH:mm")) + "<br>Motif : "
                     + HtmlUtils.htmlEscape(event.reason()) + "<br>Statut : " + statusText + "</p>"
-                    + "<p><a href=\"" + HtmlUtils.htmlEscape(verifyUrl) + "\">Consulter mon rendez-vous</a></p>"
-                    + "<p><img src=\"cid:appointmentQr\" alt=\"QR code du rendez-vous\"></p>";
+                    + "<p>Vous pouvez consulter votre réservation avec le QR code ci-dessous.</p>"
+                    + "<p><img src=\"cid:appointmentQr\" alt=\"QR code du rendez-vous\"></p>"
+                    + "<p><a href=\"" + HtmlUtils.htmlEscape(verifyUrl) + "\">" + HtmlUtils.htmlEscape(verifyUrl) + "</a></p>";
             helper.setText(body, true);
             helper.addInline("appointmentQr", new ByteArrayResource(qrCodeService.generatePng(verifyUrl)), "image/png");
             sender.send(message);
+            log.info("{} email sent reference={}", mailKind(event), event.reference());
         } catch (Exception exception) {
-            // The transaction has already committed. Never log recipient data or message contents.
-            log.warn("Appointment email could not be sent: {}", exception.getClass().getSimpleName());
+            // After commit (or without a transaction), mail failures must not escape to the caller.
+            // Never log recipient data or message contents.
+            log.warn("{} email failed reference={} errorType={}", mailKind(event), event.reference(), exception.getClass().getSimpleName());
         }
     }
 
+    private String mailKind(MailEvent event) {
+        return event.status() == AppointmentStatus.CONFIRMED ? "Confirmation" : "Appointment";
+    }
+
     public record MailEvent(String contactEmail, String firstName, String reference, String token,
-                            LocalDateTime startDateTime, String reason, AppointmentStatus status) { }
+                            LocalDateTime startDateTime, LocalDateTime endDateTime, String reason, AppointmentStatus status) { }
 }
